@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment/>
+<entry key="resources_path">./resources</entry>
+<entry key="input_path">./input</entry>
+<entry key="query_path">./bin/query</entry>
+<entry key="originals_path">./input</entry>
+<entry key="hitlist_filenames">hitList.txt</entry>
+<entry key="hitlist_path">./hitlist</entry>
+<entry key="hitlist_results_filename">./results/hitlistResults.txt</entry>
+<entry key="results_filename">./results/similarityResults.txt</entry>
+</properties>
