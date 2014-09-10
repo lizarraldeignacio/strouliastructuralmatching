@@ -4,16 +4,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class StrugliaMatchingProperties {
+public class StrouliaMatchingProperties {
 	
-	private static StrugliaMatchingProperties instance = new StrugliaMatchingProperties();
+	private static StrouliaMatchingProperties instance = new StrouliaMatchingProperties();
 	private Properties properties; 
 	
-	private StrugliaMatchingProperties () {
+	private StrouliaMatchingProperties () {
 		properties = new Properties();
 	}
 	
-	public static StrugliaMatchingProperties instance() {
+	public static StrouliaMatchingProperties instance() {
 		return instance;
 	}
 	
@@ -25,7 +25,7 @@ public class StrugliaMatchingProperties {
 		}
 	}
 	
-	public String getProperty(StrugliaPropertyName property) {	
+	public String getProperty(StrouliaPropertyName property) {	
 		return properties.getProperty(property.toString().toLowerCase());
 	}
 	

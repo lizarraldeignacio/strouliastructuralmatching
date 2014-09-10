@@ -31,7 +31,7 @@ public class DataSetLoader {
 	protected StringBuffer hitListBuffer = new StringBuffer();
 	protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	protected static final String LOADER_LOG = "DatasetLoader";
-	protected static final String STRUGLIA_PROPERTIES_FILE = "strugliaProperties.xml";
+	protected static final String STROULIA_PROPERTIES_FILE = "strouliaProperties.xml";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	protected static Integer canceledComparisons = 0;
 	protected static Integer totalComparisons = 0;
@@ -40,8 +40,8 @@ public class DataSetLoader {
 		long startTime = System.nanoTime();
 		FileInputStream strugliaPropertiesInStream;
 		try {
-			strugliaPropertiesInStream = new FileInputStream(new File(STRUGLIA_PROPERTIES_FILE));
-			StrugliaMatchingProperties strugliaProperties = StrugliaMatchingProperties.instance();
+			strugliaPropertiesInStream = new FileInputStream(new File(STROULIA_PROPERTIES_FILE));
+			StrouliaMatchingProperties strugliaProperties = StrouliaMatchingProperties.instance();
 			strugliaProperties.loadProperties(strugliaPropertiesInStream);
 		} catch (FileNotFoundException e) {
 			Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - missing strugialProperties.xml");

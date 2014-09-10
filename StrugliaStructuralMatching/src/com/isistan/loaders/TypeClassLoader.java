@@ -12,13 +12,13 @@ import java.util.LinkedList;
 
 import org.apache.log4j.Logger;
 
+import com.isistan.stroulia.Runner;
 import com.isistan.structure.similarity.ComplexTypeOrdering;
 import com.isistan.structure.similarity.IOperation;
 import com.isistan.structure.similarity.ISchemaType;
 import com.isistan.structure.similarity.SchemaComplexType;
 import com.isistan.structure.similarity.SchemaSimpleType;
 import com.isistan.structure.similarity.SimpleOperation;
-import com.isistan.struglia.Runner;
 
 @SuppressWarnings("rawtypes")
 public class TypeClassLoader implements ITypeLoader{

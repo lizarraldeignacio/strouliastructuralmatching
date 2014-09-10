@@ -31,13 +31,13 @@ import org.ow2.easywsdl.wsdl.api.WSDLReader;
 import org.ow2.easywsdl.wsdl.impl.wsdl11.DescriptionImpl;
 import org.xml.sax.InputSource;
 
+import com.isistan.stroulia.Runner;
 import com.isistan.structure.similarity.ComplexTypeOrdering;
 import com.isistan.structure.similarity.IOperation;
 import com.isistan.structure.similarity.ISchemaType;
 import com.isistan.structure.similarity.SchemaComplexType;
 import com.isistan.structure.similarity.SchemaSimpleType;
 import com.isistan.structure.similarity.SimpleOperation;
-import com.isistan.struglia.Runner;
 
 public class WSDLLoader implements ITypeLoader{
 

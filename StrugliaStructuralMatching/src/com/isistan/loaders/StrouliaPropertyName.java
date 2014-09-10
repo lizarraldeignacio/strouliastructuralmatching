@@ -1,5 +1,5 @@
 package com.isistan.loaders;
 
-public enum StrugliaPropertyName {
+public enum StrouliaPropertyName {
 	ORDERING_BONUS
 }

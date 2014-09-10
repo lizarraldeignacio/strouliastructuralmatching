@@ -1,7 +1,7 @@
 package com.isistan.structure.similarity;
 
 import com.isistan.loaders.PrimitiveType;
-import com.isistan.loaders.StrugliaMatchingProperties;
+import com.isistan.loaders.StrouliaMatchingProperties;
 
 public class SchemaSimpleType implements ISchemaType{
 
@@ -22,7 +22,7 @@ public class SchemaSimpleType implements ISchemaType{
 
 	@Override
 	public float simpleTypeSimilarity(SchemaSimpleType type) {
-		return StrugliaMatchingProperties.instance().getPrimitiveTypeCompatibility(this.type, type.getType());
+		return StrouliaMatchingProperties.instance().getPrimitiveTypeCompatibility(this.type, type.getType());
 	}
 
 	@Override

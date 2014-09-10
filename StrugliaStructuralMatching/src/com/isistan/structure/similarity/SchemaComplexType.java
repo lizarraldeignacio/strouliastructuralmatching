@@ -4,8 +4,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import com.isistan.loaders.StrugliaMatchingProperties;
-import com.isistan.loaders.StrugliaPropertyName;
+import com.isistan.loaders.StrouliaMatchingProperties;
+import com.isistan.loaders.StrouliaPropertyName;
 
 public class SchemaComplexType implements ISchemaType{
 	
@@ -100,7 +100,7 @@ public class SchemaComplexType implements ISchemaType{
 		for (i = 0; i < maxSimilarityArray.length; i++)
 			max += maxSimilarityArray[i];
 		
-		Float bonus = Float.parseFloat(StrugliaMatchingProperties.instance().getProperty(StrugliaPropertyName.ORDERING_BONUS));
+		Float bonus = Float.parseFloat(StrouliaMatchingProperties.instance().getProperty(StrouliaPropertyName.ORDERING_BONUS));
 		if (this.ordering != null) {
 			return this.ordering.equals(complexType.getOrdering()) ? max + bonus : max;
 		}

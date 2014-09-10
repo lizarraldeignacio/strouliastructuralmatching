@@ -1,4 +1,4 @@
-package com.isistan.struglia;
+package com.isistan.stroulia;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
