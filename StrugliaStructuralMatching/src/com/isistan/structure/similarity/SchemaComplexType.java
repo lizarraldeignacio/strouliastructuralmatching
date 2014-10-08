@@ -4,11 +4,19 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import org.gridgain.grid.GridException;
+import org.gridgain.grid.GridGain;
+
 import com.isistan.loaders.StrouliaMatchingProperties;
 import com.isistan.loaders.StrouliaPropertyName;
+import com.isistan.stroulia.Runner;
 
 public class SchemaComplexType implements ISchemaType{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6858981364469529030L;
 	private String name;
 	private String namespace;
 	private ComplexTypeOrdering ordering;
@@ -99,15 +107,23 @@ public class SchemaComplexType implements ISchemaType{
 		//Calcúlo el valor final de similitud sumando la máxima similitud de cada tipo
 		for (i = 0; i < maxSimilarityArray.length; i++)
 			max += maxSimilarityArray[i];
-		
-		Float bonus = Float.parseFloat(StrouliaMatchingProperties.instance().getProperty(StrouliaPropertyName.ORDERING_BONUS));
-		if (this.ordering != null) {
-			return this.ordering.equals(complexType.getOrdering()) ? max + bonus : max;
-		}
-		else {
-			return max;
-		}
-		
+			StrouliaMatchingProperties properties = null;
+			try {
+				properties = (StrouliaMatchingProperties) GridGain.grid().cache(Runner.GRID_CACHE_NAME).get(Runner.GridCacheObjects.PROPERTIES);
+			} catch (GridException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (properties == null) {
+				throw new NullPointerException("Can't get properties structure");
+			}
+			Float bonus = Float.parseFloat(properties.getProperty(StrouliaPropertyName.ORDERING_BONUS));
+			if (this.ordering != null) {
+				return this.ordering.equals(complexType.getOrdering()) ? max + bonus : max;
+			}
+			else {
+				return max;
+			}
 	}
 	
 	@Override

@@ -2,10 +2,15 @@ package com.isistan.loaders;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.Properties;
 
-public class StrouliaMatchingProperties {
+public class StrouliaMatchingProperties implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8874737367656499686L;
 	private static StrouliaMatchingProperties instance = new StrouliaMatchingProperties();
 	private Properties properties; 
 	

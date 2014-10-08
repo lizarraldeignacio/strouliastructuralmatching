@@ -56,13 +56,6 @@ public class SimpleOperation implements IOperation{
 		string.append("#######EndOperationParameterTypes#######" + System.lineSeparator());
 		return string.toString();
 	}
-
-	@Override
-	public Collection<ParameterCombination> similarityRank(IOperation operation) {
-		ParameterCombination initialCombination = new ParameterCombination((LinkedList<ISchemaType>)parameters, (LinkedList<ISchemaType>)operation.getParameters(), returnType, ((SimpleOperation)operation).getReturnType());
-		SimilarityCalculator calculator = new SimilarityCalculator();
-		return calculator.similarityRank(initialCombination);
-	}
 	
 	@Override
 	public ParameterCombination getMaxSimilarity(IOperation operation) {

@@ -204,7 +204,6 @@ public class WSDLLoader implements ITypeLoader{
 					if (sec != null) {
 						schemaComplexType.setOrdering(ComplexTypeOrdering.SECUENCE);
 						elements = sec.getElements();
-						
 					}
 					else if (all != null) {
 						schemaComplexType.setOrdering(ComplexTypeOrdering.ALL);

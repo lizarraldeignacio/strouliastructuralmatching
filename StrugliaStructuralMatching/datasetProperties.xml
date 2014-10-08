@@ -5,7 +5,7 @@
 <entry key="resources_path">./resources</entry>
 <entry key="input_path">./input</entry>
 <entry key="query_path">./bin/query</entry>
-<entry key="originals_path">./input</entry>
+<entry key="originals_path">./input/Original</entry>
 <entry key="hitlist_filenames">hitList.txt</entry>
 <entry key="hitlist_path">./hitlist</entry>
 <entry key="hitlist_results_filename">./results/hitlistResults.txt</entry>

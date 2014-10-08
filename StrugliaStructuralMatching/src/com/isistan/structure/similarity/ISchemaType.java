@@ -1,6 +1,8 @@
 package com.isistan.structure.similarity;
 
-public interface ISchemaType {
+import java.io.Serializable;
+
+public interface ISchemaType extends Serializable{
 	
 	public float similarity(ISchemaType type);
 	

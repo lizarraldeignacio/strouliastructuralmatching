@@ -31,21 +31,13 @@ public class DataSetLoader {
 	protected StringBuffer hitListBuffer = new StringBuffer();
 	protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	protected static final String LOADER_LOG = "DatasetLoader";
-	protected static final String STROULIA_PROPERTIES_FILE = "strouliaProperties.xml";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	protected static Integer canceledComparisons = 0;
 	protected static Integer totalComparisons = 0;
 	
 	public void run() {
 		long startTime = System.nanoTime();
-		FileInputStream strugliaPropertiesInStream;
-		try {
-			strugliaPropertiesInStream = new FileInputStream(new File(STROULIA_PROPERTIES_FILE));
-			StrouliaMatchingProperties strugliaProperties = StrouliaMatchingProperties.instance();
-			strugliaProperties.loadProperties(strugliaPropertiesInStream);
-		} catch (FileNotFoundException e) {
-			Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - missing strugialProperties.xml");
-		}
+		
 		FileInputStream datasetPropertiesInStream;
 		try {
 			datasetPropertiesInStream = new FileInputStream(new File(DATASET_PROPERTIES_FILE));
@@ -75,10 +67,8 @@ public class DataSetLoader {
 					try {
 						future.get();
 					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (ExecutionException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -104,8 +94,6 @@ public class DataSetLoader {
 		long endTime = System.nanoTime();
 		System.out.println("Done!");
 		System.out.println("Total comparisons: " + totalComparisons);
-		System.out.println("Canceled comparisons: " + canceledComparisons);
-		System.out.println("Canceled percentage: " + canceledComparisons/totalComparisons);
 		System.out.println("Total time (in minutes): " + (endTime-startTime)/60000000);
 	}
 		
@@ -119,7 +107,7 @@ public class DataSetLoader {
 		writeBuffer(similarityBuffer, originalQueryName + ",");
 		writeBuffer(hitListBuffer, originalQueryName + ",");
 		System.out.println("\t QueryName: " + originalQueryName);
-		try{
+		try {
 			FileInputStream fis =new FileInputStream(originalQuery);
 			InputStreamReader isr = new InputStreamReader(fis, "UTF8"); 
 		    BufferedReader br = new BufferedReader(isr);
@@ -191,7 +179,7 @@ public class DataSetLoader {
 		Collection<IOperation> classOperations = classLoader.load(queryPath);
 		Iterator<IOperation> iterClassOp = classOperations.iterator();
 		WSDLLoader loader = new WSDLLoader();
-		File wsdlFile = new File(resourcesPath + File.separator + candidateWSDLName);
+		File wsdlFile = new File(resourcesPath + File.separator + candidateWSDLName.toLowerCase());
 		Collection<IOperation> wsdlOperations = loader.load(wsdlFile);
 		float serviceSimilarityValue = 0;
 		if (wsdlOperations != null) {
