@@ -1,5 +1,5 @@
 package com.isistan.loaders;
 
 public enum StrouliaPropertyName {
-	ORDERING_BONUS
+	GRIDJOB_SIZE, ORDERING_BONUS
 }

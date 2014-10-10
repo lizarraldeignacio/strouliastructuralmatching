@@ -115,7 +115,7 @@ public class SchemaComplexType implements ISchemaType{
 				e.printStackTrace();
 			}
 			if (properties == null) {
-				throw new NullPointerException("Can't get properties structure");
+				throw new NullPointerException("Couldn't get properties structure");
 			}
 			Float bonus = Float.parseFloat(properties.getProperty(StrouliaPropertyName.ORDERING_BONUS));
 			if (this.ordering != null) {

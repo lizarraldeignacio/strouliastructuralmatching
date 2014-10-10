@@ -37,7 +37,7 @@ public class SchemaSimpleType implements ISchemaType{
 			e.printStackTrace();
 		}
 		if (properties == null) {
-			throw new NullPointerException("Can't get properties structure");
+			throw new NullPointerException("Couldn't get properties structure");
 		}
 		return properties.getPrimitiveTypeCompatibility(this.type, type.getType());
 	}

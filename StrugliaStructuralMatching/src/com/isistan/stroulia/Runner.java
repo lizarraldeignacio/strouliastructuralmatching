@@ -25,10 +25,9 @@ public class Runner {
 	public static final String GRID_CACHE_NAME = "SimilarityCache";
 	protected static final String STRUGLIA_PROPERTIES_FILE = "./strouliaProperties.xml";
 	protected static Grid grid = null;
-	protected Runner instance;
 
 	public enum GridCacheObjects {
-		MOST_SIMILAR_COMBINATION, PROPERTIES
+		PROPERTIES, SIMILARITY_BUFFER, HITLIST_BUFFER, DATASET_PROPERTIES, HITLIST_TABLE
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -46,7 +45,6 @@ public class Runner {
 				Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - missing strugialProperties.xml");
 			}
 			new DataSetLoader().run();
-			grid.stopNodes();
 			fileAppender.close();
 			
 		} catch (GridException e) {

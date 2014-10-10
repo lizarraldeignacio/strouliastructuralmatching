@@ -7,42 +7,59 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
+import org.gridgain.grid.GridException;
+import org.gridgain.grid.GridGain;
+import org.gridgain.grid.GridIllegalStateException;
+import org.gridgain.grid.cache.GridCache;
+import org.gridgain.grid.lang.GridRunnable;
 
+import com.isistan.stroulia.Runner;
+import com.isistan.stroulia.Runner.GridCacheObjects;
 import com.isistan.structure.similarity.IOperation;
 import com.isistan.structure.similarity.ParameterCombination;
 import com.isistan.structure.similarity.SimpleOperation;
 
 
-public class DataSetLoader {
+public class DataSetLoader implements Serializable{
 	
-	protected StringBuffer similarityBuffer = new StringBuffer();
-	protected StringBuffer hitListBuffer = new StringBuffer();
-	protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -163857493039425244L;
+	protected ExecutorService executor = GridGain.grid().compute().executorService();
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
-	protected static Integer canceledComparisons = 0;
-	protected static Integer totalComparisons = 0;
 	
+	@SuppressWarnings("unchecked")
 	public void run() {
 		long startTime = System.nanoTime();
-		
+		try {
+			GridGain.grid().cache(Runner.GRID_CACHE_NAME).putx(Runner.GridCacheObjects.SIMILARITY_BUFFER, new StringBuffer());
+			GridGain.grid().cache(Runner.GRID_CACHE_NAME).putx(Runner.GridCacheObjects.HITLIST_BUFFER, new StringBuffer());
+		} catch (GridIllegalStateException e1) {
+			e1.printStackTrace();
+		} catch (GridException e1) {
+			e1.printStackTrace();
+		}
 		FileInputStream datasetPropertiesInStream;
+		final DataSetProperties datasetProperties = new DataSetProperties();
 		try {
 			datasetPropertiesInStream = new FileInputStream(new File(DATASET_PROPERTIES_FILE));
-			final DataSetProperties datasetProperties = DataSetProperties.instance();
 			datasetProperties.loadProperties(datasetPropertiesInStream);
+			final Map<String, String> hitListTable = createHitlistTable(new File(datasetProperties.getProperty(DataSetProperty.HITLIST_PATH)), datasetProperties.getProperty(DataSetProperty.HITLIST_FILENAMES));
 			File inputDir = new File(datasetProperties.getProperty(DataSetProperty.INPUT_PATH));
 			if (inputDir.list() == null) {
 				  System.out.println("No files into the specified folder");
@@ -53,11 +70,16 @@ public class DataSetLoader {
 				for (final File inputFile : inputDir.listFiles()) {
 					if (inputFile.toString().endsWith(".txt")){													
 						futures.add(
-						executor.submit(new Runnable() {
+						executor.submit(new GridRunnable() {
+							/**
+							 * 
+							 */
+							private static final long serialVersionUID = 2789954077792873576L;
+
 							@Override
 							public void run() {
-								executeInterfaceCompatibility(createHitlistTable(new File(datasetProperties.getProperty(DataSetProperty.HITLIST_PATH))
-								, datasetProperties.getProperty(DataSetProperty.HITLIST_FILENAMES)), new File(datasetProperties.getProperty(DataSetProperty.RESOURCES_PATH)),
+								executeInterfaceCompatibility(hitListTable
+								, new File(datasetProperties.getProperty(DataSetProperty.RESOURCES_PATH)),
 								new File(datasetProperties.getProperty(DataSetProperty.QUERY_PATH)), new File(datasetProperties.getProperty(DataSetProperty.ORIGINALS_PATH)), inputFile.toString());
 							}
 						}));
@@ -75,37 +97,43 @@ public class DataSetLoader {
 				}
 		} catch (FileNotFoundException e) {
 			Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - missing datasetProperties.xml");
+		} catch (GridIllegalStateException e1) {
+			e1.printStackTrace();
 		}
 		executor.shutdownNow();
 		System.out.println("Writing Files...");
-		DataSetProperties datasetProperties = DataSetProperties.instance();
 		try {
 			FileWriter similarityResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.RESULTS_FILENAME)));
 			FileWriter hitListResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.HITLIST_RESULTS_FILENAME)));
 			BufferedWriter similarityResultsBuffer = new BufferedWriter(similarityResultsFile);
 			BufferedWriter hitListResultsBuffer = new BufferedWriter(hitListResultsFile);
+			StringBuffer similarityBuffer = (StringBuffer) GridGain.grid().cache(Runner.GRID_CACHE_NAME).get(GridCacheObjects.SIMILARITY_BUFFER);
+			StringBuffer hitListBuffer = (StringBuffer) GridGain.grid().cache(Runner.GRID_CACHE_NAME).get(GridCacheObjects.HITLIST_BUFFER);
 			similarityResultsBuffer.write(similarityBuffer.toString());
 			hitListResultsBuffer.write(hitListBuffer.toString());
 			similarityResultsBuffer.close();
 			hitListResultsBuffer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
+		} catch (GridIllegalStateException e) {
+			e.printStackTrace();
+		} catch (GridException e) {
+			e.printStackTrace();
 		}
 		long endTime = System.nanoTime();
 		System.out.println("Done!");
-		System.out.println("Total comparisons: " + totalComparisons);
-		System.out.println("Total time (in minutes): " + (endTime-startTime)/60000000);
+		System.out.println("Total time (in seconds): " + (endTime-startTime)/1000000);
 	}
 		
 
-	private void executeInterfaceCompatibility(HashMap<String,String> hitlist, File resourcesPath, File queryPath, File originalsPath, String originalQuery) {
+	private void executeInterfaceCompatibility(Map<String,String> hitlist, File resourcesPath, File queryPath, File originalsPath, String originalQuery) {
 		StringBuffer similarityBuffer = new StringBuffer();
 		StringBuffer hitListBuffer = new StringBuffer();
 		HashSet<String> analizedWsdls = new HashSet<String>();
 		System.out.println("Executing IC for query: " + originalQuery);
 		String originalQueryName = originalQuery.substring(originalQuery.lastIndexOf(File.separator)+1,originalQuery.lastIndexOf("."));
-		writeBuffer(similarityBuffer, originalQueryName + ",");
-		writeBuffer(hitListBuffer, originalQueryName + ",");
+		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, originalQueryName + ",");
+		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, originalQueryName + ",");
 		System.out.println("\t QueryName: " + originalQueryName);
 		try {
 			FileInputStream fis =new FileInputStream(originalQuery);
@@ -144,30 +172,33 @@ public class DataSetLoader {
     				e.printStackTrace();
     			}
     		}
-    		writeBuffer(similarityBuffer, originalQueryName + System.lineSeparator());
-    		writeBuffer(hitListBuffer, originalQueryName + System.lineSeparator());
+    		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, originalQueryName + System.lineSeparator());
+    		writeBuffer(GridCacheObjects.HITLIST_BUFFER, originalQueryName + System.lineSeparator());
 		    br.close();
 		}
 		catch (Exception e){
 			e.printStackTrace();
 		}
-		writeBuffer(this.similarityBuffer, similarityBuffer.toString());
-		writeBuffer(this.hitListBuffer, hitListBuffer.toString());
+		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, similarityBuffer.toString());
+		writeBuffer(GridCacheObjects.HITLIST_BUFFER, hitListBuffer.toString());
 	}
 	
-	private void writeBuffer(StringBuffer buffer, String data) {
-		synchronized (buffer) {
-			buffer.append(data);
+	private void writeBuffer(GridCacheObjects object, String data) {
+		GridCache<GridCacheObjects, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
+		try {
+			cache.replace(object, ((StringBuffer)cache.get(object)).append(data));
+		} catch (GridException e) {
+			e.printStackTrace();
 		}
 	}
 	
 	private void writeResultsFileBuffers(float maxSimilarity, boolean isHit, String originalQueryName, StringBuffer similarityBuffer, StringBuffer hitListBuffer) {
-		writeBuffer(similarityBuffer, maxSimilarity + ",");
+		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, maxSimilarity + ",");
 		if (isHit) {
-			writeBuffer(hitListBuffer, "-1,");
+			writeBuffer(GridCacheObjects.HITLIST_BUFFER, "-1,");
 		}
 		else {
-			writeBuffer(hitListBuffer, "0,");
+			writeBuffer(GridCacheObjects.HITLIST_BUFFER, "0,");
 		}
 	}
 	
@@ -190,17 +221,7 @@ public class DataSetLoader {
 					IOperation targetOp = iterWSDLOp.next();
 					ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
 					if (combination != null) {
-						synchronized (totalComparisons) {
-							totalComparisons++;
-						}
 						serviceSimilarityValue = combination.getSimilarity() > serviceSimilarityValue ? combination.getSimilarity() : serviceSimilarityValue;
-					}
-					else { //If the calculation takes long time to finish, we cancel it and return 0.
-						synchronized (canceledComparisons) {
-							canceledComparisons++;
-						}
-						serviceSimilarityValue = 0;
-						break;
 					}
 				}
 			}
@@ -210,7 +231,8 @@ public class DataSetLoader {
 	
 	
 	
-	private HashMap<String, String> createHitlistTable(File hitListDir, String hitListFileName) {		
+	private Map<String, String> createHitlistTable(File hitListDir, String hitListFileName) {
+		System.out.println(hitListDir);
 		HashMap<String, String> aux = new HashMap<String, String>();
 		for (String actualHitListDir : hitListDir.list()) {
 			String actualHitListFile = hitListDir.getAbsolutePath() + File.separator +  actualHitListDir + File.separator + hitListFileName;

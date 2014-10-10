@@ -3,6 +3,7 @@
 <properties>
 <comment/>
 <entry key="ordering_bonus">10</entry>
+<entry key="gridjob_size">1000000</entry>
 <entry key="byte_to_byte">10</entry>
 <entry key="byte_to_short">10</entry>
 <entry key="byte_to_int">10</entry>
