@@ -132,8 +132,8 @@ public class DataSetLoader implements Serializable{
 		HashSet<String> analizedWsdls = new HashSet<String>();
 		System.out.println("Executing IC for query: " + originalQuery);
 		String originalQueryName = originalQuery.substring(originalQuery.lastIndexOf(File.separator)+1,originalQuery.lastIndexOf("."));
-		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, originalQueryName + ",");
-		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, originalQueryName + ",");
+		similarityBuffer.append(originalQueryName + ",");
+		hitListBuffer.append(originalQueryName + ",");
 		System.out.println("\t QueryName: " + originalQueryName);
 		try {
 			FileInputStream fis =new FileInputStream(originalQuery);
@@ -172,8 +172,8 @@ public class DataSetLoader implements Serializable{
     				e.printStackTrace();
     			}
     		}
-    		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, originalQueryName + System.lineSeparator());
-    		writeBuffer(GridCacheObjects.HITLIST_BUFFER, originalQueryName + System.lineSeparator());
+    		similarityBuffer.append(originalQueryName + System.lineSeparator());
+    		hitListBuffer.append(originalQueryName + System.lineSeparator());
 		    br.close();
 		}
 		catch (Exception e){
@@ -193,12 +193,12 @@ public class DataSetLoader implements Serializable{
 	}
 	
 	private void writeResultsFileBuffers(float maxSimilarity, boolean isHit, String originalQueryName, StringBuffer similarityBuffer, StringBuffer hitListBuffer) {
-		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, maxSimilarity + ",");
+		similarityBuffer.append(maxSimilarity + ",");
 		if (isHit) {
-			writeBuffer(GridCacheObjects.HITLIST_BUFFER, "-1,");
+			hitListBuffer.append("-1,");
 		}
 		else {
-			writeBuffer(GridCacheObjects.HITLIST_BUFFER, "0,");
+			hitListBuffer.append("0,");
 		}
 	}
 	

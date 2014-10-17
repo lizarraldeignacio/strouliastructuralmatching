@@ -1,11 +1,9 @@
 package com.isistan.structure.similarity;
 
-import com.google.common.collect.*;
+import com.isistan.util.Permutations;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -20,56 +18,126 @@ public class SimilarityCalculator implements Serializable{
 	 */
 	private static final long serialVersionUID = 2012752801233568847L;
 	private ParameterCombination mostSimilarCombination;
-	private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-	private long JOB_SIZE = 100000;
+	private ExecutorService executor = Executors.newFixedThreadPool(6);
 	
 	public SimilarityCalculator() {
 		
 	}
 
-	/*private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
-		Collection<List<ISchemaType>> permutations = Collections2.permutations(targetTypes);
+	private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
+		final LinkedList<ArrayList<ISchemaType>> permutations = /*Permutations.permuteUnique(targetTypes)*/null;
 		for (List<ISchemaType> list : permutations) {
-			ParameterCombination combination = new ParameterCombination(sourceTypes, list.subList(0, sourceTypes.size()), sourceReturnType, targetReturnType);
+			ParameterCombination combination = new ParameterCombination(sourceTypes, list, sourceReturnType, targetReturnType, 0);
 			combination.calculateSimilarity();
+			//System.out.println(combination.getSimilarity());
 			if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
 				mostSimilarCombination = (ParameterCombination) combination.clone();
 			}
 		}
-	}*/
-	
-	private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
-		Collection<List<ISchemaType>> permutations = Collections2.permutations(targetTypes);
-		List<List<List<ISchemaType>>> partitions = this.<List<ISchemaType>>partitions(permutations, JOB_SIZE);
-		List<Future> futures = new LinkedList<>();
-		for (List<List<ISchemaType>> partition : partitions) {
-			final List<List<ISchemaType>> part = new LinkedList<List<ISchemaType>>((Collection<List<ISchemaType>>) partition);
+		/*final int size = permutations.size() > 6 ? permutations.size()/6 : permutations.size();
+		List<Future> futures = new LinkedList<Future>();
+		if (permutations.size() <= 6) {
 			futures.add(executor.submit(new Runnable() {
-			@SuppressWarnings("unchecked")
-			@Override
-						public void run() {
-							for (List<ISchemaType> list : part) {
-								ParameterCombination combination = new ParameterCombination(sourceTypes, list.subList(0, sourceTypes.size()), sourceReturnType, targetReturnType);
-								combination.calculateSimilarity();
-								if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
-									mostSimilarCombination = (ParameterCombination) combination.clone();
-								}
+				@SuppressWarnings("unchecked")
+				@Override
+				public void run() {
+					for (int i = 0 ; i < permutations.size(); i++) {
+						ParameterCombination combination = new ParameterCombination(sourceTypes, permutations.get(i), sourceReturnType, targetReturnType, 0);
+						combination.calculateSimilarity();
+						if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
+							mostSimilarCombination = (ParameterCombination) combination.clone();
+						}
+					}
+						
+				}
+			}));
+		}
+		else {
+			for (int i = 0; i < 6; i++) {
+				final int startIndex = i * size;
+				final int endIndex = i == 5 ? permutations.size() : (i + 1) * size;
+				futures.add(executor.submit(new Runnable() {
+					@SuppressWarnings("unchecked")
+					@Override
+					public void run() {
+						int start = startIndex;
+						int end = endIndex;
+						for (int i = start ; i < end; i++) {
+							ParameterCombination combination = new ParameterCombination(sourceTypes, permutations.get(i), sourceReturnType, targetReturnType, 0);
+							combination.calculateSimilarity();
+							if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
+								mostSimilarCombination = (ParameterCombination) combination.clone();
 							}
 						}
-					}));
-		 		}
-		for (Future f : futures)
-		try {
-			f.get();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
+							
+					}
+				}));
+			}
 		}
+		for (Future f : futures)
+			try {
+				f.get();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+		}*/
 	}
 	
+	/*private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
+		final Object[] permutations = Collections2.permutations(targetTypes).toArray();
+		final int size = permutations.length > 6 ? permutations.length/6 : permutations.length;
+		List<Future> futures = new LinkedList<Future>();
+		if (size < 6) {
+			futures.add(executor.submit(new Runnable() {
+				@SuppressWarnings("unchecked")
+				@Override
+				public void run() {
+					for (int i = 0 ; i < size; i++) {
+						ParameterCombination combination = new ParameterCombination(sourceTypes, (List<ISchemaType>) permutations[i], sourceReturnType, targetReturnType);
+						combination.calculateSimilarity();
+						if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
+							mostSimilarCombination = (ParameterCombination) combination.clone();
+						}
+					}
+						
+				}
+			}));
+		}
+		else {
+			for (int i = 0; i < 6; i++) {
+				final int startIndex = i * size;
+				final int endIndex = i == 5 ? permutations.length : (i + 1) * size;
+				futures.add(executor.submit(new Runnable() {
+					@SuppressWarnings("unchecked")
+					@Override
+					public void run() {
+						int start = startIndex;
+						int end = endIndex;
+						for (int i = start ; i < end; i++) {
+							ParameterCombination combination = new ParameterCombination(sourceTypes, (List<ISchemaType>) permutations[i], sourceReturnType, targetReturnType);
+							combination.calculateSimilarity();
+							if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
+								mostSimilarCombination = (ParameterCombination) combination.clone();
+							}
+						}
+							
+					}
+				}));
+			}
+		}
+		for (Future f : futures)
+			try {
+				f.get();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+		}
+	}*/
 	
-	private <T> List<List<T>> partitions(Collection<T> collection, long size) {
+	
+	/*private <T> List<List<T>> partitions(Collection<T> collection, long size) {
 		List<List<T>> partitions = new LinkedList<List<T>>();
 		List<T> element = new LinkedList<T>();
 		int i = 0;
@@ -81,12 +149,12 @@ public class SimilarityCalculator implements Serializable{
 				element = new LinkedList<T>();
 				partitions.add(element);
 			}
-			if ((i % size != 0)) {
-				partitions.add(element);
-			}
+		}
+		if ((i % size != 0)) {
+			partitions.add(element);
 		}
 		return partitions;
-	}
+	}*/
 	
 	public ParameterCombination getMaxSimilarity(final ParameterCombination initialCombination) {
 		final ArrayList<ISchemaType> sourceTypes = new ArrayList<ISchemaType>(initialCombination.getSourceParameters());
@@ -98,7 +166,6 @@ public class SimilarityCalculator implements Serializable{
 		else {
 			getSimilarity(targetTypes, sourceTypes, initialCombination.getSourceReturnType(), initialCombination.getTargetReturnType());
 		}
-		
 		return mostSimilarCombination;
 	}
 }

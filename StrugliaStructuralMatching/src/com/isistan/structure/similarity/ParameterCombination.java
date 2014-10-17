@@ -39,11 +39,12 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 		this.targetReturnType = targetReturnType;
 	}
 
-	public ParameterCombination(List<ISchemaType> sourceParameters, List<ISchemaType> targetParameters, ISchemaType sourceReturnType, ISchemaType targetReturnType) {
+	public ParameterCombination(List<ISchemaType> sourceParameters, List<ISchemaType> targetParameters, ISchemaType sourceReturnType, ISchemaType targetReturnType, float similarity) {
 		this.sourceParameters = new LinkedList<ISchemaType>(sourceParameters);
 		this.targetParameters = new LinkedList<ISchemaType>(targetParameters);
 		this.sourceReturnType = sourceReturnType;
 		this.targetReturnType = targetReturnType;
+		this.similarity = similarity;
 	}
 	
 	public void calculateSimilarity() {
@@ -107,7 +108,7 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 	
 	@Override
 	public Object clone() {
-		return new ParameterCombination(sourceParameters, targetParameters, sourceReturnType, targetReturnType);
+		return new ParameterCombination(sourceParameters, targetParameters, sourceReturnType, targetReturnType, this.similarity);
 	}
 
 	@Override

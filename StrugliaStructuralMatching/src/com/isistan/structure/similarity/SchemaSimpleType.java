@@ -49,7 +49,18 @@ public class SchemaSimpleType implements ISchemaType{
 	}
 	
 	@Override
+	public boolean equals(Object obj) {
+		ISchemaType type = (ISchemaType) obj;
+		return type.getTypeName().equals(this.getTypeName());
+	}
+	
+	@Override
 	public String toString() {
 		return new String("-------SimpleType-------" + System.lineSeparator() + "SimpleTypeName: " + type.toString() + System.lineSeparator());
+	}
+
+	@Override
+	public String getTypeName() {
+		return this.type.toString();
 	}
 }

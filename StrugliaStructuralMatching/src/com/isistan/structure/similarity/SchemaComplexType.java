@@ -127,6 +127,12 @@ public class SchemaComplexType implements ISchemaType{
 	}
 	
 	@Override
+	public boolean equals(Object obj) {
+		ISchemaType type = (ISchemaType) obj;
+		return type.getTypeName().equals(this.getTypeName());
+	}
+	
+	@Override
 	public String toString() {
 		StringBuffer string = new StringBuffer();
 		string.append("*******ComplexType*******" + System.lineSeparator());
@@ -139,5 +145,10 @@ public class SchemaComplexType implements ISchemaType{
 		}
 		string.append("*********EndSubtypes********" + System.lineSeparator());
 		return string.toString();
+	}
+
+	@Override
+	public String getTypeName() {
+		return this.name;
 	}
 }

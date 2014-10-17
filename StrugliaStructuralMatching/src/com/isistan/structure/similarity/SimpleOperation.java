@@ -59,7 +59,7 @@ public class SimpleOperation implements IOperation{
 	
 	@Override
 	public ParameterCombination getMaxSimilarity(IOperation operation) {
-		ParameterCombination initialCombination = new ParameterCombination((LinkedList<ISchemaType>)parameters, (LinkedList<ISchemaType>)operation.getParameters(), returnType, ((SimpleOperation)operation).getReturnType());
+		ParameterCombination initialCombination = new ParameterCombination((LinkedList<ISchemaType>)parameters, (LinkedList<ISchemaType>)operation.getParameters(), returnType, ((SimpleOperation)operation).getReturnType(), 0);
 		SimilarityCalculator calculator = new SimilarityCalculator();
 		return calculator.getMaxSimilarity(initialCombination);
 	}
