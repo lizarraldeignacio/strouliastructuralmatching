@@ -1,9 +1,15 @@
 package com.isistan.structure.similarity;
 
+import com.google.common.collect.Lists;
 import com.isistan.util.Permutations;
+
+import gnu.trove.list.array.TByteArrayList;
+import gnu.trove.map.hash.TByteObjectHashMap;
+import gnu.trove.map.hash.TObjectByteHashMap;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -18,143 +24,70 @@ public class SimilarityCalculator implements Serializable{
 	 */
 	private static final long serialVersionUID = 2012752801233568847L;
 	private ParameterCombination mostSimilarCombination;
-	private ExecutorService executor = Executors.newFixedThreadPool(6);
+	private TObjectByteHashMap<ISchemaType> byteMap;
+	private TByteObjectHashMap<ISchemaType> reverseByteMap;
+	private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	
 	public SimilarityCalculator() {
-		
+		byteMap = new TObjectByteHashMap<ISchemaType>();
+		reverseByteMap = new TByteObjectHashMap<ISchemaType>();
 	}
 
 	private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
-		final LinkedList<ArrayList<ISchemaType>> permutations = /*Permutations.permuteUnique(targetTypes)*/null;
-		for (List<ISchemaType> list : permutations) {
-			ParameterCombination combination = new ParameterCombination(sourceTypes, list, sourceReturnType, targetReturnType, 0);
-			combination.calculateSimilarity();
-			//System.out.println(combination.getSimilarity());
-			if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
-				mostSimilarCombination = (ParameterCombination) combination.clone();
-			}
-		}
-		/*final int size = permutations.size() > 6 ? permutations.size()/6 : permutations.size();
+		final LinkedList<TByteArrayList> permutations = Permutations.permuteUnique(byteArrayMapping(targetTypes));
+		int size = permutations.size() > Runtime.getRuntime().availableProcessors() ? permutations.size() / Runtime.getRuntime().availableProcessors() : permutations.size();  
+		List<List<TByteArrayList>> partitions = Lists.partition(permutations, size);
 		List<Future> futures = new LinkedList<Future>();
-		if (permutations.size() <= 6) {
-			futures.add(executor.submit(new Runnable() {
-				@SuppressWarnings("unchecked")
+		for (final List<TByteArrayList> part : partitions) {
+			futures.add(executor.submit(new Runnable() {	
 				@Override
 				public void run() {
-					for (int i = 0 ; i < permutations.size(); i++) {
-						ParameterCombination combination = new ParameterCombination(sourceTypes, permutations.get(i), sourceReturnType, targetReturnType, 0);
+					for (TByteArrayList list : part) {
+						ParameterCombination combination = new ParameterCombination(sourceTypes, reverseByteArrayMapping(list), sourceReturnType, targetReturnType, 0);
 						combination.calculateSimilarity();
+						//System.out.println(combination.getSimilarity());
 						if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
 							mostSimilarCombination = (ParameterCombination) combination.clone();
 						}
 					}
-						
 				}
 			}));
 		}
-		else {
-			for (int i = 0; i < 6; i++) {
-				final int startIndex = i * size;
-				final int endIndex = i == 5 ? permutations.size() : (i + 1) * size;
-				futures.add(executor.submit(new Runnable() {
-					@SuppressWarnings("unchecked")
-					@Override
-					public void run() {
-						int start = startIndex;
-						int end = endIndex;
-						for (int i = start ; i < end; i++) {
-							ParameterCombination combination = new ParameterCombination(sourceTypes, permutations.get(i), sourceReturnType, targetReturnType, 0);
-							combination.calculateSimilarity();
-							if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
-								mostSimilarCombination = (ParameterCombination) combination.clone();
-							}
-						}
-							
-					}
-				}));
-			}
-		}
-		for (Future f : futures)
+		for (Future future : futures) {
 			try {
-				f.get();
+				future.get();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
 				e.printStackTrace();
-		}*/
+			}
+		}
 	}
 	
-	/*private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
-		final Object[] permutations = Collections2.permutations(targetTypes).toArray();
-		final int size = permutations.length > 6 ? permutations.length/6 : permutations.length;
-		List<Future> futures = new LinkedList<Future>();
-		if (size < 6) {
-			futures.add(executor.submit(new Runnable() {
-				@SuppressWarnings("unchecked")
-				@Override
-				public void run() {
-					for (int i = 0 ; i < size; i++) {
-						ParameterCombination combination = new ParameterCombination(sourceTypes, (List<ISchemaType>) permutations[i], sourceReturnType, targetReturnType);
-						combination.calculateSimilarity();
-						if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
-							mostSimilarCombination = (ParameterCombination) combination.clone();
-						}
-					}
-						
-				}
-			}));
+	private ArrayList<ISchemaType> reverseByteArrayMapping(TByteArrayList mapping) {
+		ArrayList<ISchemaType> reverseArray = new ArrayList<ISchemaType>();
+		for (int i = 0; i < mapping.size(); i++) {
+			reverseArray.add(reverseByteMap.get(mapping.getQuick(i)));
 		}
-		else {
-			for (int i = 0; i < 6; i++) {
-				final int startIndex = i * size;
-				final int endIndex = i == 5 ? permutations.length : (i + 1) * size;
-				futures.add(executor.submit(new Runnable() {
-					@SuppressWarnings("unchecked")
-					@Override
-					public void run() {
-						int start = startIndex;
-						int end = endIndex;
-						for (int i = start ; i < end; i++) {
-							ParameterCombination combination = new ParameterCombination(sourceTypes, (List<ISchemaType>) permutations[i], sourceReturnType, targetReturnType);
-							combination.calculateSimilarity();
-							if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
-								mostSimilarCombination = (ParameterCombination) combination.clone();
-							}
-						}
-							
-					}
-				}));
-			}
-		}
-		for (Future f : futures)
-			try {
-				f.get();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-		}
-	}*/
+		return reverseArray;
+	}
 	
-	
-	/*private <T> List<List<T>> partitions(Collection<T> collection, long size) {
-		List<List<T>> partitions = new LinkedList<List<T>>();
-		List<T> element = new LinkedList<T>();
-		int i = 0;
-		Iterator<T> iter = collection.iterator();
-		while (iter.hasNext()) {
-			element.add(iter.next());
-			i++;
-			if (i % size == 0) {
-				element = new LinkedList<T>();
-				partitions.add(element);
+	private TByteArrayList byteArrayMapping(ArrayList<ISchemaType> types) {
+		byteMap.clear();
+		reverseByteMap.clear();
+		TByteArrayList byteMapping = new TByteArrayList(types.size());
+		byte index = 0;
+		for (int i = 0; i < types.size(); i++) {
+			ISchemaType iSchemaType = types.get(i);
+			if (!byteMap.contains(iSchemaType)) {
+				byteMap.put(iSchemaType, index);
+				reverseByteMap.put(index, iSchemaType);
+				index++;
 			}
+			byteMapping.add(byteMap.get(iSchemaType));
 		}
-		if ((i % size != 0)) {
-			partitions.add(element);
-		}
-		return partitions;
-	}*/
+		return byteMapping;
+	}
 	
 	public ParameterCombination getMaxSimilarity(final ParameterCombination initialCombination) {
 		final ArrayList<ISchemaType> sourceTypes = new ArrayList<ISchemaType>(initialCombination.getSourceParameters());
@@ -167,5 +100,10 @@ public class SimilarityCalculator implements Serializable{
 			getSimilarity(targetTypes, sourceTypes, initialCombination.getSourceReturnType(), initialCombination.getTargetReturnType());
 		}
 		return mostSimilarCombination;
+	}
+	
+	@Override
+	protected void finalize() {
+		executor.shutdownNow();
 	}
 }

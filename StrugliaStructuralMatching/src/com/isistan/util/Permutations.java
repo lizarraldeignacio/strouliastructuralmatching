@@ -1,16 +1,17 @@
 package com.isistan.util;
 
-import gnu.trove.list.array.TShortArrayList;
+import gnu.trove.list.array.TByteArrayList;
+
 import java.util.LinkedList;
 
 public class Permutations {
-	public static LinkedList<TShortArrayList> permuteUnique(TShortArrayList list) {
-		LinkedList<TShortArrayList> result = new LinkedList<TShortArrayList>();
+	public static LinkedList<TByteArrayList> permuteUnique(TByteArrayList list) {
+		LinkedList<TByteArrayList> result = new LinkedList<TByteArrayList>();
 		permuteUnique(list, 0, result);
 		return result;
 	}
 	
-	private static void permuteUnique(TShortArrayList list, int start, LinkedList<TShortArrayList> result) {
+	private static void permuteUnique(TByteArrayList list, int start, LinkedList<TByteArrayList> result) {
 	 
 		if (start >= list.size() ) {
 			result.add(list);
@@ -25,7 +26,7 @@ public class Permutations {
 		}
 	}
 	
-	private static boolean containsDuplicate(TShortArrayList arr, int start, int end) {
+	private static boolean containsDuplicate(TByteArrayList arr, int start, int end) {
 		for (int i = start; i <= end-1; i++) {
 			if (arr.getQuick(i) == arr.getQuick(end)) {
 				return false;
@@ -34,8 +35,8 @@ public class Permutations {
 		return true;
 	}
 	 
-	private static void swap(TShortArrayList a, int i, int j) {
-		short temp = a.getQuick(i);
+	private static void swap(TByteArrayList a, int i, int j) {
+		byte temp = a.getQuick(i);
 		a.setQuick(i, a.getQuick(j));
 		a.setQuick(j, temp);
 	}

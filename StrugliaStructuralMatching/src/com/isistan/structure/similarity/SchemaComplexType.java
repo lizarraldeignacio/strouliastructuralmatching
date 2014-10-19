@@ -127,6 +127,11 @@ public class SchemaComplexType implements ISchemaType{
 	}
 	
 	@Override
+	public int hashCode() {
+		return this.getTypeName().hashCode();
+	}
+	
+	@Override
 	public boolean equals(Object obj) {
 		ISchemaType type = (ISchemaType) obj;
 		return type.getTypeName().equals(this.getTypeName());

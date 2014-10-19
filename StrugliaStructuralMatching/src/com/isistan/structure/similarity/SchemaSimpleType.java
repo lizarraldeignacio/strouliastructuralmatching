@@ -49,6 +49,11 @@ public class SchemaSimpleType implements ISchemaType{
 	}
 	
 	@Override
+	public int hashCode() {
+		return this.getType().hashCode();
+	}
+	
+	@Override
 	public boolean equals(Object obj) {
 		ISchemaType type = (ISchemaType) obj;
 		return type.getTypeName().equals(this.getTypeName());
