@@ -46,7 +46,7 @@ public class Runner {
 			}
 			new DataSetLoader().run();
 			fileAppender.close();
-			
+			grid.stopNodes();
 		} catch (GridException e) {
 			e.printStackTrace();
 		}

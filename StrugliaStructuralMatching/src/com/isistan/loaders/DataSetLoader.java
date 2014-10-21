@@ -100,7 +100,6 @@ public class DataSetLoader implements Serializable{
 		} catch (GridIllegalStateException e1) {
 			e1.printStackTrace();
 		}
-		executor.shutdownNow();
 		System.out.println("Writing Files...");
 		try {
 			FileWriter similarityResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.RESULTS_FILENAME)));
@@ -122,9 +121,13 @@ public class DataSetLoader implements Serializable{
 		}
 		long endTime = System.nanoTime();
 		System.out.println("Done!");
-		System.out.println("Total time (in seconds): " + (endTime-startTime)/1000000);
+		System.out.println("Total time (in minutes): " + (endTime-startTime)/(1000000*60));
 	}
 		
+	@Override
+	public void finalize() {
+		executor.shutdownNow();
+	}
 
 	private void executeInterfaceCompatibility(Map<String,String> hitlist, File resourcesPath, File queryPath, File originalsPath, String originalQuery) {
 		StringBuffer similarityBuffer = new StringBuffer();
@@ -184,6 +187,7 @@ public class DataSetLoader implements Serializable{
 	}
 	
 	private void writeBuffer(GridCacheObjects object, String data) {
+		System.out.println("WriteBuffer: " + data);
 		GridCache<GridCacheObjects, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
 		try {
 			cache.replace(object, ((StringBuffer)cache.get(object)).append(data));
