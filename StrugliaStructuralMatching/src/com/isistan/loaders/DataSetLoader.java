@@ -24,6 +24,7 @@ import org.gridgain.grid.GridException;
 import org.gridgain.grid.GridGain;
 import org.gridgain.grid.GridIllegalStateException;
 import org.gridgain.grid.cache.GridCache;
+import org.gridgain.grid.cache.GridCacheTx;
 import org.gridgain.grid.lang.GridRunnable;
 
 import com.isistan.stroulia.Runner;
@@ -187,11 +188,14 @@ public class DataSetLoader implements Serializable{
 	}
 	
 	private void writeBuffer(GridCacheObjects object, String data) {
-		System.out.println("WriteBuffer: " + data);
 		GridCache<GridCacheObjects, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
-		try {
-			cache.replace(object, ((StringBuffer)cache.get(object)).append(data));
-		} catch (GridException e) {
+		try (GridCacheTx tx = cache.txStart()) {
+		    StringBuffer buffer = (StringBuffer) cache.get(object);
+		    buffer.append(data);
+		    cache.put(object, buffer);
+		    tx.commit();
+		}
+		catch (GridException e) {
 			e.printStackTrace();
 		}
 	}
