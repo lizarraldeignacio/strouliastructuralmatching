@@ -192,7 +192,7 @@ public class DataSetLoader implements Serializable{
 		try (GridCacheTx tx = cache.txStart()) {
 		    StringBuffer buffer = (StringBuffer) cache.get(object);
 		    buffer.append(data);
-		    cache.put(object, buffer);
+		    cache.putx(object, buffer);
 		    tx.commit();
 		}
 		catch (GridException e) {

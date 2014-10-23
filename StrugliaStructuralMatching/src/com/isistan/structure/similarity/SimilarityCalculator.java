@@ -1,7 +1,6 @@
 package com.isistan.structure.similarity;
 
 import com.google.common.collect.Lists;
-import com.isistan.stroulia.Runner;
 import com.isistan.util.Permutations;
 
 import gnu.trove.list.array.TByteArrayList;
@@ -16,8 +15,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.apache.log4j.Logger;
 
 public class SimilarityCalculator implements Serializable{
 	
@@ -36,38 +33,37 @@ public class SimilarityCalculator implements Serializable{
 	}
 
 	@SuppressWarnings("rawtypes")
-	private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
-		if (targetTypes.size() < 40) {
-			final LinkedList<TByteArrayList> permutations = Permutations.permuteUnique(byteArrayMapping(targetTypes));
-			int size = permutations.size() > Runtime.getRuntime().availableProcessors() ? permutations.size() / Runtime.getRuntime().availableProcessors() : permutations.size();  
-			List<List<TByteArrayList>> partitions = Lists.partition(permutations, size);
-			List<Future> futures = new LinkedList<Future>();
-			for (final List<TByteArrayList> part : partitions) {
-				futures.add(executor.submit(new Runnable() {	
-					@Override
-					public void run() {
-						for (TByteArrayList list : part) {
-							ParameterCombination combination = new ParameterCombination(sourceTypes, reverseByteArrayMapping(list), sourceReturnType, targetReturnType, 0);
-							combination.calculateSimilarity();
-							if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
-								mostSimilarCombination = (ParameterCombination) combination.clone();
-							}
+	private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> initialTargetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
+		final List<ISchemaType> targetTypes= /*initialTargetTypes.size() > 35? initialTargetTypes.subList(0, 35) :*/ initialTargetTypes;
+		if (initialTargetTypes.size() > 35) {
+			return;
+		}
+		final LinkedList<TByteArrayList> permutations = Permutations.permuteUnique(byteArrayMapping(targetTypes));
+		int size = permutations.size() > Runtime.getRuntime().availableProcessors() ? permutations.size() / Runtime.getRuntime().availableProcessors() : permutations.size();  
+		List<List<TByteArrayList>> partitions = Lists.partition(permutations, size);
+		List<Future> futures = new LinkedList<Future>();
+		for (final List<TByteArrayList> part : partitions) {
+			futures.add(executor.submit(new Runnable() {	
+				@Override
+				public void run() {
+					for (TByteArrayList list : part) {
+						ParameterCombination combination = new ParameterCombination(sourceTypes, reverseByteArrayMapping(list), sourceReturnType, targetReturnType, 0);
+						combination.calculateSimilarity();
+						if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
+							mostSimilarCombination = (ParameterCombination) combination.clone();
 						}
 					}
-				}));
-			}
-			for (Future future : futures) {
-				try {
-					future.get();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				} catch (ExecutionException e) {
-					e.printStackTrace();
 				}
-			}
+			}));
 		}
-		else {
-			Logger.getLogger(Runner.LOADER_LOG).warn("Operation canceled, parameter size exceeds permited size");
+		for (Future future : futures) {
+			try {
+				future.get();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -79,7 +75,7 @@ public class SimilarityCalculator implements Serializable{
 		return reverseArray;
 	}
 	
-	private TByteArrayList byteArrayMapping(ArrayList<ISchemaType> types) {
+	private TByteArrayList byteArrayMapping(List<ISchemaType> types) {
 		byteMap.clear();
 		reverseByteMap.clear();
 		TByteArrayList byteMapping = new TByteArrayList(types.size());
