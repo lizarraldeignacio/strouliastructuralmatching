@@ -187,6 +187,7 @@ public class DataSetLoader implements Serializable{
 		writeBuffer(GridCacheObjects.HITLIST_BUFFER, hitListBuffer.toString());
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void writeBuffer(GridCacheObjects object, String data) {
 		GridCache<GridCacheObjects, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
 		try (GridCacheTx tx = cache.txStart()) {
