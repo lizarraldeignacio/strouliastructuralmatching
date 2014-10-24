@@ -1,10 +1,15 @@
 package com.isistan.structure.similarity;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedList;
 
-public class SimpleOperation implements IOperation{
+public class SimpleOperation implements IOperation, Serializable{
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5190997101377943317L;
 	private String name;
 	private ISchemaType returnType;
 	private Collection<ISchemaType> parameters;

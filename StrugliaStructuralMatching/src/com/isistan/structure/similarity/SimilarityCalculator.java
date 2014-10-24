@@ -1,20 +1,7 @@
 package com.isistan.structure.similarity;
 
-import com.google.common.collect.Lists;
-import com.isistan.util.Permutations;
-
-import gnu.trove.list.array.TByteArrayList;
-import gnu.trove.map.hash.TByteObjectHashMap;
-import gnu.trove.map.hash.TObjectByteHashMap;
-
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class SimilarityCalculator implements Serializable{
 	
@@ -23,18 +10,18 @@ public class SimilarityCalculator implements Serializable{
 	 */
 	private static final long serialVersionUID = 2012752801233568847L;
 	private ParameterCombination mostSimilarCombination;
-	private TObjectByteHashMap<ISchemaType> byteMap;
-	private TByteObjectHashMap<ISchemaType> reverseByteMap;
-	private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	//private TObjectByteHashMap<ISchemaType> byteMap;
+	//private TByteObjectHashMap<ISchemaType> reverseByteMap;
+	private ParameterCombination partialSolution;
+	//private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	
 	public SimilarityCalculator() {
-		byteMap = new TObjectByteHashMap<ISchemaType>();
-		reverseByteMap = new TByteObjectHashMap<ISchemaType>();
+		/*byteMap = new TObjectByteHashMap<ISchemaType>();
+		reverseByteMap = new TByteObjectHashMap<ISchemaType>();*/
 	}
 
-	@SuppressWarnings("rawtypes")
-	private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> initialTargetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
-		final List<ISchemaType> targetTypes= /*initialTargetTypes.size() > 35? initialTargetTypes.subList(0, 35) :*/ initialTargetTypes;
+	/*private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> initialTargetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
+		//final List<ISchemaType> targetTypes= /*initialTargetTypes.size() > 35? initialTargetTypes.subList(0, 35) : initialTargetTypes;
 		if (initialTargetTypes.size() > 35) {
 			return;
 		}
@@ -65,9 +52,38 @@ public class SimilarityCalculator implements Serializable{
 				e.printStackTrace();
 			}
 		}
+	}*/
+	
+	
+	private void getSimilarity(ArrayList<ISchemaType> sourceTypes, ArrayList<ISchemaType> targetTypes, ISchemaType sourceReturnType, ISchemaType targetReturnType) {
+		if (sourceTypes.size() == 0) {
+			ParameterCombination combination = (ParameterCombination) partialSolution.clone();
+			combination.setSourceReturnType(sourceReturnType);
+			combination.setTargetReturnType(targetReturnType);
+			combination.calculateSimilarity();
+			if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
+				mostSimilarCombination = combination;
+			}
+			return;
+		}
+		ISchemaType targetType;
+		ISchemaType sourceType = sourceTypes.remove(0);
+		partialSolution.addSourceParameter(sourceType);
+		
+		for (int j = 0; j < targetTypes.size(); j++) {
+			targetType = targetTypes.get(j);
+			targetTypes.remove(j);
+			partialSolution.addTargetParameter(targetType);
+			getSimilarity(sourceTypes, targetTypes, sourceReturnType, targetReturnType);
+			partialSolution.removeLastTargetParameter();
+			targetTypes.add(j, targetType);
+		}
+		
+		partialSolution.removeLastSourceParameter();
+		sourceTypes.add(0, sourceType);
 	}
 	
-	private ArrayList<ISchemaType> reverseByteArrayMapping(TByteArrayList mapping) {
+	/*private ArrayList<ISchemaType> reverseByteArrayMapping(TByteArrayList mapping) {
 		ArrayList<ISchemaType> reverseArray = new ArrayList<ISchemaType>();
 		for (int i = 0; i < mapping.size(); i++) {
 			reverseArray.add(reverseByteMap.get(mapping.getQuick(i)));
@@ -90,7 +106,7 @@ public class SimilarityCalculator implements Serializable{
 			byteMapping.add(byteMap.get(iSchemaType));
 		}
 		return byteMapping;
-	}
+	}*/
 	
 	public ParameterCombination getMaxSimilarity(final ParameterCombination initialCombination) {
 		final ArrayList<ISchemaType> sourceTypes = new ArrayList<ISchemaType>(initialCombination.getSourceParameters());
@@ -105,8 +121,8 @@ public class SimilarityCalculator implements Serializable{
 		return mostSimilarCombination;
 	}
 	
-	@Override
+	/*@Override
 	protected void finalize() {
 		executor.shutdownNow();
-	}
+	}*/
 }

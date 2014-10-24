@@ -1,5 +1,6 @@
 package com.isistan.structure.similarity;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -11,7 +12,7 @@ import com.isistan.loaders.StrouliaMatchingProperties;
 import com.isistan.loaders.StrouliaPropertyName;
 import com.isistan.stroulia.Runner;
 
-public class SchemaComplexType implements ISchemaType{
+public class SchemaComplexType implements ISchemaType, Serializable{
 	
 	/**
 	 * 

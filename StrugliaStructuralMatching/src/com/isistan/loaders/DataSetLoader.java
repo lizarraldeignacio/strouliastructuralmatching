@@ -14,9 +14,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
@@ -30,7 +33,6 @@ import org.gridgain.grid.lang.GridRunnable;
 import com.isistan.stroulia.Runner;
 import com.isistan.stroulia.Runner.GridCacheObjects;
 import com.isistan.structure.similarity.IOperation;
-import com.isistan.structure.similarity.ParameterCombination;
 import com.isistan.structure.similarity.SimpleOperation;
 
 
@@ -40,7 +42,8 @@ public class DataSetLoader implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -163857493039425244L;
-	protected ExecutorService executor = GridGain.grid().compute().executorService();
+	protected ExecutorService gridExecutor = GridGain.grid().compute().executorService();
+	protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	
@@ -71,7 +74,7 @@ public class DataSetLoader implements Serializable{
 				for (final File inputFile : inputDir.listFiles()) {
 					if (inputFile.toString().endsWith(".txt")){													
 						futures.add(
-						executor.submit(new GridRunnable() {
+						gridExecutor.submit(new GridRunnable() {
 							/**
 							 * 
 							 */
@@ -127,7 +130,7 @@ public class DataSetLoader implements Serializable{
 		
 	@Override
 	public void finalize() {
-		executor.shutdownNow();
+		gridExecutor.shutdownNow();
 	}
 
 	private void executeInterfaceCompatibility(Map<String,String> hitlist, File resourcesPath, File queryPath, File originalsPath, String originalQuery) {
@@ -222,19 +225,33 @@ public class DataSetLoader implements Serializable{
 		File wsdlFile = new File(resourcesPath + File.separator + candidateWSDLName.toLowerCase());
 		Collection<IOperation> wsdlOperations = loader.load(wsdlFile);
 		float serviceSimilarityValue = 0;
+		List<Future<Float>> futures = new LinkedList<Future<Float>>();
 		if (wsdlOperations != null) {
 			Iterator<IOperation> iterWSDLOp = wsdlOperations.iterator();
 			if (iterClassOp.hasNext()) {
-				SimpleOperation queryOP = (SimpleOperation) iterClassOp.next();
+				final SimpleOperation queryOP = (SimpleOperation) iterClassOp.next();
 				while(iterWSDLOp.hasNext()) {
-					IOperation targetOp = iterWSDLOp.next();
-					ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
-					if (combination != null) {
-						serviceSimilarityValue = combination.getSimilarity() > serviceSimilarityValue ? combination.getSimilarity() : serviceSimilarityValue;
+					final IOperation targetOp = iterWSDLOp.next();
+					futures.add(executor.submit(new Callable<Float>() {
+						@Override
+						public Float call() throws Exception {
+							return queryOP.getMaxSimilarity(targetOp).getSimilarity();
+						}
+					}));
+				}
+				for (Future<Float> future : futures) {
+					try {
+						if (future.get() > serviceSimilarityValue)
+							serviceSimilarityValue = future.get();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					} catch (ExecutionException e) {
+						e.printStackTrace();
+					}
 					}
 				}
 			}
-		}
+			
 		return serviceSimilarityValue;
 	}
 	
