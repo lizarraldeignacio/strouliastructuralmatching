@@ -33,6 +33,7 @@ import org.gridgain.grid.lang.GridRunnable;
 import com.isistan.stroulia.Runner;
 import com.isistan.stroulia.Runner.GridCacheObjects;
 import com.isistan.structure.similarity.IOperation;
+import com.isistan.structure.similarity.ParameterCombination;
 import com.isistan.structure.similarity.SimpleOperation;
 
 
@@ -235,7 +236,8 @@ public class DataSetLoader implements Serializable{
 					futures.add(executor.submit(new Callable<Float>() {
 						@Override
 						public Float call() throws Exception {
-							return queryOP.getMaxSimilarity(targetOp).getSimilarity();
+							ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
+							return combination != null ? combination.getSimilarity() : 0;
 						}
 					}));
 				}

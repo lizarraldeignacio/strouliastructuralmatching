@@ -16,6 +16,7 @@ public class SimilarityCalculator implements Serializable{
 	//private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	
 	public SimilarityCalculator() {
+		
 		/*byteMap = new TObjectByteHashMap<ISchemaType>();
 		reverseByteMap = new TByteObjectHashMap<ISchemaType>();*/
 	}
@@ -111,6 +112,7 @@ public class SimilarityCalculator implements Serializable{
 	public ParameterCombination getMaxSimilarity(final ParameterCombination initialCombination) {
 		final ArrayList<ISchemaType> sourceTypes = new ArrayList<ISchemaType>(initialCombination.getSourceParameters());
 		final ArrayList<ISchemaType> targetTypes = new ArrayList<ISchemaType>(initialCombination.getTargetParameters());
+		partialSolution = new ParameterCombination();
 		mostSimilarCombination= new ParameterCombination();
 		if (sourceTypes.size() <= targetTypes.size()) {
 			getSimilarity(sourceTypes, targetTypes, initialCombination.getSourceReturnType(), initialCombination.getTargetReturnType());
