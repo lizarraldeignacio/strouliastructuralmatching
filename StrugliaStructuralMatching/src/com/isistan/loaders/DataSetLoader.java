@@ -44,7 +44,7 @@ public class DataSetLoader implements Serializable{
 	 */
 	private static final long serialVersionUID = -163857493039425244L;
 	protected ExecutorService gridExecutor = GridGain.grid().compute().executorService();
-	protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	protected static ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	
@@ -80,7 +80,7 @@ public class DataSetLoader implements Serializable{
 							 * 
 							 */
 							private static final long serialVersionUID = 2789954077792873576L;
-
+							
 							@Override
 							public void run() {
 								executeInterfaceCompatibility(hitListTable
@@ -126,7 +126,7 @@ public class DataSetLoader implements Serializable{
 		}
 		long endTime = System.nanoTime();
 		System.out.println("Done!");
-		System.out.println("Total time (in minutes): " + (endTime-startTime)/(1000000*60));
+		System.out.println("Total time (in minutes): " + (endTime-startTime)/(1000000000*60));
 	}
 		
 	@Override

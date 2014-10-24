@@ -113,7 +113,7 @@ public class SimilarityCalculator implements Serializable{
 		final ArrayList<ISchemaType> sourceTypes = new ArrayList<ISchemaType>(initialCombination.getSourceParameters());
 		final ArrayList<ISchemaType> targetTypes = new ArrayList<ISchemaType>(initialCombination.getTargetParameters());
 		partialSolution = new ParameterCombination();
-		mostSimilarCombination= new ParameterCombination();
+		mostSimilarCombination = new ParameterCombination();
 		if (sourceTypes.size() <= targetTypes.size()) {
 			getSimilarity(sourceTypes, targetTypes, initialCombination.getSourceReturnType(), initialCombination.getTargetReturnType());
 		}
