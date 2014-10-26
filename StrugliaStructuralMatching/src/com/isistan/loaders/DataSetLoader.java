@@ -23,15 +23,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
-import org.gridgain.grid.GridException;
 import org.gridgain.grid.GridGain;
 import org.gridgain.grid.GridIllegalStateException;
-import org.gridgain.grid.cache.GridCache;
-import org.gridgain.grid.cache.GridCacheTx;
-import org.gridgain.grid.lang.GridRunnable;
+import org.gridgain.grid.lang.GridCallable;
 
-import com.isistan.stroulia.Runner;
-import com.isistan.stroulia.Runner.GridCacheObjects;
 import com.isistan.structure.similarity.IOperation;
 import com.isistan.structure.similarity.ParameterCombination;
 import com.isistan.structure.similarity.SimpleOperation;
@@ -48,19 +43,12 @@ public class DataSetLoader implements Serializable{
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	
-	@SuppressWarnings("unchecked")
 	public void run() {
 		long startTime = System.nanoTime();
-		try {
-			GridGain.grid().cache(Runner.GRID_CACHE_NAME).putx(Runner.GridCacheObjects.SIMILARITY_BUFFER, new StringBuffer());
-			GridGain.grid().cache(Runner.GRID_CACHE_NAME).putx(Runner.GridCacheObjects.HITLIST_BUFFER, new StringBuffer());
-		} catch (GridIllegalStateException e1) {
-			e1.printStackTrace();
-		} catch (GridException e1) {
-			e1.printStackTrace();
-		}
 		FileInputStream datasetPropertiesInStream;
 		final DataSetProperties datasetProperties = new DataSetProperties();
+		StringBuffer similarityBuffer = new StringBuffer();
+		StringBuffer hitListBuffer = new StringBuffer();
 		try {
 			datasetPropertiesInStream = new FileInputStream(new File(DATASET_PROPERTIES_FILE));
 			datasetProperties.loadProperties(datasetPropertiesInStream);
@@ -70,58 +58,56 @@ public class DataSetLoader implements Serializable{
 				  System.out.println("No files into the specified folder");
 			}
 			else {
-				LinkedList<Future<?>> futures = new LinkedList<Future<?>>();
+				LinkedList<Future<String[]>> futures = new LinkedList<Future<String[]>>();
 				System.out.println("Analyzing Folder: ");
 				for (final File inputFile : inputDir.listFiles()) {
 					if (inputFile.toString().endsWith(".txt")){													
 						futures.add(
-						gridExecutor.submit(new GridRunnable() {
+						gridExecutor.submit(new GridCallable<String[]>() {
 							/**
 							 * 
 							 */
 							private static final long serialVersionUID = 2789954077792873576L;
-							
+
 							@Override
-							public void run() {
-								executeInterfaceCompatibility(hitListTable
-								, new File(datasetProperties.getProperty(DataSetProperty.RESOURCES_PATH)),
-								new File(datasetProperties.getProperty(DataSetProperty.QUERY_PATH)), new File(datasetProperties.getProperty(DataSetProperty.ORIGINALS_PATH)), inputFile.toString());
+							public String[] call() throws Exception {
+								return executeInterfaceCompatibility(hitListTable
+										, new File(datasetProperties.getProperty(DataSetProperty.RESOURCES_PATH)),
+										new File(datasetProperties.getProperty(DataSetProperty.QUERY_PATH)), new File(datasetProperties.getProperty(DataSetProperty.ORIGINALS_PATH)), inputFile.toString());
 							}
 						}));
 						}
 					}
-				for (Future<?> future : futures) {
+			
+				for (Future<String[]> future : futures) {
 					try {
-						future.get();
+						String[] results = future.get();
+						similarityBuffer.append(results[0]);
+						hitListBuffer.append(results[1]);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					} catch (ExecutionException e) {
 						e.printStackTrace();
 					}
 				}
-				}
+			}
 		} catch (FileNotFoundException e) {
 			Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - missing datasetProperties.xml");
 		} catch (GridIllegalStateException e1) {
 			e1.printStackTrace();
 		}
 		System.out.println("Writing Files...");
+		FileWriter similarityResultsFile;
 		try {
-			FileWriter similarityResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.RESULTS_FILENAME)));
+			similarityResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.RESULTS_FILENAME)));
 			FileWriter hitListResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.HITLIST_RESULTS_FILENAME)));
 			BufferedWriter similarityResultsBuffer = new BufferedWriter(similarityResultsFile);
 			BufferedWriter hitListResultsBuffer = new BufferedWriter(hitListResultsFile);
-			StringBuffer similarityBuffer = (StringBuffer) GridGain.grid().cache(Runner.GRID_CACHE_NAME).get(GridCacheObjects.SIMILARITY_BUFFER);
-			StringBuffer hitListBuffer = (StringBuffer) GridGain.grid().cache(Runner.GRID_CACHE_NAME).get(GridCacheObjects.HITLIST_BUFFER);
 			similarityResultsBuffer.write(similarityBuffer.toString());
 			hitListResultsBuffer.write(hitListBuffer.toString());
 			similarityResultsBuffer.close();
 			hitListResultsBuffer.close();
 		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (GridIllegalStateException e) {
-			e.printStackTrace();
-		} catch (GridException e) {
 			e.printStackTrace();
 		}
 		long endTime = System.nanoTime();
@@ -134,7 +120,7 @@ public class DataSetLoader implements Serializable{
 		gridExecutor.shutdownNow();
 	}
 
-	private void executeInterfaceCompatibility(Map<String,String> hitlist, File resourcesPath, File queryPath, File originalsPath, String originalQuery) {
+	private String[] executeInterfaceCompatibility(Map<String,String> hitlist, File resourcesPath, File queryPath, File originalsPath, String originalQuery) {
 		StringBuffer similarityBuffer = new StringBuffer();
 		StringBuffer hitListBuffer = new StringBuffer();
 		HashSet<String> analizedWsdls = new HashSet<String>();
@@ -187,22 +173,8 @@ public class DataSetLoader implements Serializable{
 		catch (Exception e){
 			e.printStackTrace();
 		}
-		writeBuffer(GridCacheObjects.SIMILARITY_BUFFER, similarityBuffer.toString());
-		writeBuffer(GridCacheObjects.HITLIST_BUFFER, hitListBuffer.toString());
-	}
-	
-	@SuppressWarnings("unchecked")
-	private void writeBuffer(GridCacheObjects object, String data) {
-		GridCache<GridCacheObjects, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
-		try (GridCacheTx tx = cache.txStart()) {
-		    StringBuffer buffer = (StringBuffer) cache.get(object);
-		    buffer.append(data);
-		    cache.putx(object, buffer);
-		    tx.commit();
-		}
-		catch (GridException e) {
-			e.printStackTrace();
-		}
+		String[] arr = {similarityBuffer.toString(), hitListBuffer.toString()};
+		return arr;
 	}
 	
 	private void writeResultsFileBuffers(float maxSimilarity, boolean isHit, String originalQueryName, StringBuffer similarityBuffer, StringBuffer hitListBuffer) {
