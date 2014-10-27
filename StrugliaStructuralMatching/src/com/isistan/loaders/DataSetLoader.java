@@ -96,6 +96,8 @@ public class DataSetLoader implements Serializable{
 		} catch (GridIllegalStateException e1) {
 			e1.printStackTrace();
 		}
+		gridExecutor.shutdown();
+		executor.shutdown();
 		System.out.println("Writing Files...");
 		FileWriter similarityResultsFile;
 		try {
@@ -113,11 +115,6 @@ public class DataSetLoader implements Serializable{
 		long endTime = System.nanoTime();
 		System.out.println("Done!");
 		System.out.println("Total time (in minutes): " + (endTime-startTime)/(1000000000*60));
-	}
-		
-	@Override
-	public void finalize() {
-		gridExecutor.shutdownNow();
 	}
 
 	private String[] executeInterfaceCompatibility(Map<String,String> hitlist, File resourcesPath, File queryPath, File originalsPath, String originalQuery) {
