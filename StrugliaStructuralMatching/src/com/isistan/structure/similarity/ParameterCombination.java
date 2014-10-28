@@ -12,8 +12,8 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 	 * 
 	 */
 	private static final long serialVersionUID = 3017260158307953234L;
-	private LinkedList<ISchemaType> sourceParameters;
-	private LinkedList<ISchemaType> targetParameters;
+	private List<ISchemaType> sourceParameters;
+	private List<ISchemaType> targetParameters;
 	private ISchemaType sourceReturnType;
 	private ISchemaType targetReturnType;
 	private float similarity = 0;
@@ -74,32 +74,8 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 		sourceParameters.add(parameter);
 	}
 	
-	public void addFirstTargetParameter(ISchemaType parameter) {
-		targetParameters.addFirst(parameter);
-	}
-	
-	public void addFirstSourceParameter(ISchemaType parameter) {
-		sourceParameters.addFirst(parameter);
-	}
-	
 	public void addTargetParameter(ISchemaType parameter) {
 		targetParameters.add(parameter);
-	}
-	
-	public void removeLastTargetParameter() {
-		targetParameters.removeLast();
-	}
-	
-	public void removeLastSourceParameter() {
-		sourceParameters.removeLast();
-	}
-	
-	public ISchemaType popTargetParameter() {
-		return targetParameters.pop();
-	}
-	
-	public ISchemaType popSourceParameter() {
-		return sourceParameters.pop();
 	}
 	
 	public Collection<ISchemaType> getTargetParameters() {
