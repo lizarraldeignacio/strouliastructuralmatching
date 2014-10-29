@@ -75,14 +75,12 @@ public class DataSetLoader {
 					try {
 						future.get();
 					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (ExecutionException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
-				}
+			}
 		} catch (FileNotFoundException e) {
 			Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - missing datasetProperties.xml");
 		}
@@ -136,7 +134,7 @@ public class DataSetLoader {
 		    			auxWsdl = auxWsdl.substring(0,auxWsdl.lastIndexOf("-"));
 		    		}
 		    		String originalClassName  = "query." + originalQueryName;
-    				String candidateWSDLName = auxWsdl.replace(".class", ".wsdl");
+    				String candidateWSDLName = auxWsdl.replace(".class", ".wsdl").toLowerCase();
 					analizedWsdls.add(candidateWSDLName.toLowerCase().replace(".wsdl", ""));
 					float maxSimilarity = calculateSimilarity(queryPath, resourcesPath, originalClassName, candidateWSDLName);
 					writeResultsFileBuffers(maxSimilarity, hitlist.get(originalQueryName.toLowerCase()).toLowerCase().equals(candidateWSDLName.toLowerCase().replace(".wsdl", "")), originalQueryName, similarityBuffer, hitListBuffer);
@@ -147,7 +145,7 @@ public class DataSetLoader {
     			try{
     				String originalClassName  = "query." + originalQueryName;
     				hit = hit.substring(0,1).toUpperCase()+hit.substring(1);
-    				String candidateWSDLName = hit + ".wsdl";
+    				String candidateWSDLName = (hit + ".wsdl").toLowerCase();
     				System.out.println("Relevant service does not appear");
     				float maxSimilarity = calculateSimilarity(queryPath, originalsPath, originalClassName, candidateWSDLName);
     				writeResultsFileBuffers(maxSimilarity, true, originalQueryName, similarityBuffer, hitListBuffer);
