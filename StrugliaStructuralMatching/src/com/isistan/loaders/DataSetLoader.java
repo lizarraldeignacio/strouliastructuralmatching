@@ -14,12 +14,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
@@ -39,7 +36,6 @@ public class DataSetLoader implements Serializable{
 	 */
 	private static final long serialVersionUID = -163857493039425244L;
 	protected ExecutorService gridExecutor = GridGain.grid().compute().executorService();
-	protected static ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	
@@ -97,7 +93,7 @@ public class DataSetLoader implements Serializable{
 			e1.printStackTrace();
 		}
 		gridExecutor.shutdown();
-		executor.shutdown();
+		//executor.shutdown();
 		System.out.println("Writing Files...");
 		FileWriter similarityResultsFile;
 		try {
@@ -195,34 +191,20 @@ public class DataSetLoader implements Serializable{
 		File wsdlFile = new File(resourcesPath + File.separator + candidateWSDLName.toLowerCase());
 		Collection<IOperation> wsdlOperations = loader.load(wsdlFile);
 		float serviceSimilarityValue = 0;
-		List<Future<Float>> futures = new LinkedList<Future<Float>>();
 		if (wsdlOperations != null) {
 			Iterator<IOperation> iterWSDLOp = wsdlOperations.iterator();
 			if (iterClassOp.hasNext()) {
-				final SimpleOperation queryOP = (SimpleOperation) iterClassOp.next();
+				SimpleOperation queryOP = (SimpleOperation) iterClassOp.next();
 				while(iterWSDLOp.hasNext()) {
-					final IOperation targetOp = iterWSDLOp.next();
-					futures.add(executor.submit(new Callable<Float>() {
-						@Override
-						public Float call() throws Exception {
-							ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
-							return combination != null ? combination.getSimilarity() : 0;
-						}
-					}));
-				}
-				for (Future<Float> future : futures) {
-					try {
-						if (future.get() > serviceSimilarityValue)
-							serviceSimilarityValue = future.get();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					} catch (ExecutionException e) {
-						e.printStackTrace();
-					}
+					IOperation targetOp = iterWSDLOp.next();
+					ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
+					if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
+						serviceSimilarityValue = combination.getSimilarity();
 					}
 				}
 			}
-			
+		}
+		
 		return serviceSimilarityValue;
 	}
 	

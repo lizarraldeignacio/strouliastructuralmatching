@@ -9,7 +9,6 @@ import gnu.trove.map.hash.TObjectByteHashMap;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -37,7 +36,7 @@ public class SimilarityCalculator implements Serializable{
 		final LinkedList<TByteArrayList> permutations = Permutations.permuteUnique(byteArrayMapping(targetTypes));
 		int size = permutations.size() > Runtime.getRuntime().availableProcessors() ? permutations.size() / Runtime.getRuntime().availableProcessors() : permutations.size();  
 		List<List<TByteArrayList>> partitions = Lists.partition(permutations, size);
-		List<Future> futures = new LinkedList<Future>();
+		List<Future<?>> futures = new LinkedList<Future<?>>();
 		for (final List<TByteArrayList> part : partitions) {
 			futures.add(executor.submit(new Runnable() {	
 				@Override
@@ -53,7 +52,7 @@ public class SimilarityCalculator implements Serializable{
 				}
 			}));
 		}
-		for (Future future : futures) {
+		for (Future<?> future : futures) {
 			try {
 				future.get();
 			} catch (InterruptedException e) {
