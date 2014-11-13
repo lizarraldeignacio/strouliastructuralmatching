@@ -44,7 +44,6 @@ public class SimilarityCalculator implements Serializable{
 					for (TByteArrayList list : part) {
 						ParameterCombination combination = new ParameterCombination(sourceTypes, reverseByteArrayMapping(list), sourceReturnType, targetReturnType, 0);
 						combination.calculateSimilarity();
-						//System.out.println(combination.getSimilarity());
 						if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
 							mostSimilarCombination = (ParameterCombination) combination.clone();
 						}
