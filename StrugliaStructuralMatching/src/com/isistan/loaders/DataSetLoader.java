@@ -4,17 +4,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -44,42 +40,37 @@ public class DataSetLoader implements Serializable{
 		FileInputStream datasetPropertiesInStream;
 		final DataSetProperties datasetProperties = new DataSetProperties();
 		StringBuffer similarityBuffer = new StringBuffer();
-		StringBuffer hitListBuffer = new StringBuffer();
 		try {
 			datasetPropertiesInStream = new FileInputStream(new File(DATASET_PROPERTIES_FILE));
 			datasetProperties.loadProperties(datasetPropertiesInStream);
-			final Map<String, String> hitListTable = createHitlistTable(new File(datasetProperties.getProperty(DataSetProperty.HITLIST_PATH)), datasetProperties.getProperty(DataSetProperty.HITLIST_FILENAMES));
 			File inputDir = new File(datasetProperties.getProperty(DataSetProperty.INPUT_PATH));
 			if (inputDir.list() == null) {
 				  System.out.println("No files into the specified folder");
 			}
 			else {
-				LinkedList<Future<String[]>> futures = new LinkedList<Future<String[]>>();
+				LinkedList<Future<String>> futures = new LinkedList<Future<String>>();
 				System.out.println("Analyzing Folder: ");
 				for (final File inputFile : inputDir.listFiles()) {
 					if (inputFile.toString().endsWith(".txt")){													
 						futures.add(
-						gridExecutor.submit(new GridCallable<String[]>() {
+						gridExecutor.submit(new GridCallable<String>() {
 							/**
 							 * 
 							 */
 							private static final long serialVersionUID = 2789954077792873576L;
 
 							@Override
-							public String[] call() throws Exception {
-								return executeInterfaceCompatibility(hitListTable
-										, new File(datasetProperties.getProperty(DataSetProperty.RESOURCES_PATH)),
-										new File(datasetProperties.getProperty(DataSetProperty.QUERY_PATH)), new File(datasetProperties.getProperty(DataSetProperty.ORIGINALS_PATH)), inputFile.toString());
+							public String call() throws Exception {
+								return executeInterfaceCompatibility(new File(datasetProperties.getProperty(DataSetProperty.RESOURCES_PATH)),
+										new File(datasetProperties.getProperty(DataSetProperty.QUERY_PATH)), inputFile.toString());
 							}
 						}));
 						}
-					}
+				}
 			
-				for (Future<String[]> future : futures) {
+				for (Future<String> future : futures) {
 					try {
-						String[] results = future.get();
-						similarityBuffer.append(results[0]);
-						hitListBuffer.append(results[1]);
+						similarityBuffer.append(future.get());
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					} catch (ExecutionException e) {
@@ -93,18 +84,13 @@ public class DataSetLoader implements Serializable{
 			e1.printStackTrace();
 		}
 		gridExecutor.shutdown();
-		//executor.shutdown();
 		System.out.println("Writing Files...");
 		FileWriter similarityResultsFile;
 		try {
 			similarityResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.RESULTS_FILENAME)));
-			FileWriter hitListResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.HITLIST_RESULTS_FILENAME)));
 			BufferedWriter similarityResultsBuffer = new BufferedWriter(similarityResultsFile);
-			BufferedWriter hitListResultsBuffer = new BufferedWriter(hitListResultsFile);
 			similarityResultsBuffer.write(similarityBuffer.toString());
-			hitListResultsBuffer.write(hitListBuffer.toString());
 			similarityResultsBuffer.close();
-			hitListResultsBuffer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -113,71 +99,31 @@ public class DataSetLoader implements Serializable{
 		System.out.println("Total time (in minutes): " + (endTime-startTime)/(1000000000*60));
 	}
 
-	private String[] executeInterfaceCompatibility(Map<String,String> hitlist, File resourcesPath, File queryPath, File originalsPath, String originalQuery) {
+	private String executeInterfaceCompatibility(File resourcesPath, File queryPath, String originalQuery) {
 		StringBuffer similarityBuffer = new StringBuffer();
-		StringBuffer hitListBuffer = new StringBuffer();
-		HashSet<String> analizedWsdls = new HashSet<String>();
 		System.out.println("Executing IC for query: " + originalQuery);
 		String originalQueryName = originalQuery.substring(originalQuery.lastIndexOf(File.separator)+1,originalQuery.lastIndexOf("."));
 		similarityBuffer.append(originalQueryName + ",");
-		hitListBuffer.append(originalQueryName + ",");
 		System.out.println("\t QueryName: " + originalQueryName);
 		try {
-			FileInputStream fis =new FileInputStream(originalQuery);
-			InputStreamReader isr = new InputStreamReader(fis, "UTF8"); 
-		    BufferedReader br = new BufferedReader(isr);
-		    String linea = br.readLine();
-	    	linea = linea.replace("[", "");
-	    	linea = linea.replace("]", "");
-	    	linea = linea.trim();
-	    	if (!linea.isEmpty()){
-	    		String[] wsdlList = linea.split(",");
-	    		for (String wsdl : wsdlList) {
-	    			String auxWsdl = wsdl.substring(wsdl.lastIndexOf("/")+1);
-		    		if (auxWsdl.contains("-0")|
-		    			auxWsdl.contains("-1")){				    			
-		    			auxWsdl = auxWsdl.substring(0,auxWsdl.lastIndexOf("-"));
-		    		}
-		    		String originalClassName  = "query." + originalQueryName;
-    				String candidateWSDLName = auxWsdl.replace(".class", ".wsdl");
-					analizedWsdls.add(candidateWSDLName.toLowerCase().replace(".wsdl", ""));
-					float maxSimilarity = calculateSimilarity(queryPath, resourcesPath, originalClassName, candidateWSDLName);
-					writeResultsFileBuffers(maxSimilarity, hitlist.get(originalQueryName.toLowerCase()).toLowerCase().equals(candidateWSDLName.toLowerCase().replace(".wsdl", "")), originalQueryName, similarityBuffer, hitListBuffer);
-    				}
-    			}
-    		String hit = hitlist.get(originalQueryName.toLowerCase()).toLowerCase();
-    		if (!analizedWsdls.contains(hit)) {
-    			try{
-    				String originalClassName  = "query." + originalQueryName;
-    				hit = hit.substring(0,1).toUpperCase()+hit.substring(1);
-    				String candidateWSDLName = hit + ".wsdl";
-    				System.out.println("Relevant service does not appear");
-    				float maxSimilarity = calculateSimilarity(queryPath, originalsPath, originalClassName, candidateWSDLName);
-    				writeResultsFileBuffers(maxSimilarity, true, originalQueryName, similarityBuffer, hitListBuffer);
-    			}
-    			catch (Exception e){
-    				e.printStackTrace();
-    			}
-    		}
+		    BufferedReader br = new BufferedReader(new FileReader(originalQuery));
+		    String line = br.readLine();
+		    while (line != null) {
+		    	if (!line.isEmpty()){
+	    			String wsdlName = line.split(",")[0];
+		    		String originalClassName  = "query." + Character.toUpperCase(originalQueryName.charAt(0)) + originalQueryName.substring(1);
+					float maxSimilarity = calculateSimilarity(queryPath, resourcesPath, originalClassName, wsdlName);
+					similarityBuffer.append(maxSimilarity + ",");
+		    	}
+		    	line = br.readLine();
+		    }
     		similarityBuffer.append(originalQueryName + System.lineSeparator());
-    		hitListBuffer.append(originalQueryName + System.lineSeparator());
 		    br.close();
 		}
 		catch (Exception e){
 			e.printStackTrace();
 		}
-		String[] arr = {similarityBuffer.toString(), hitListBuffer.toString()};
-		return arr;
-	}
-	
-	private void writeResultsFileBuffers(float maxSimilarity, boolean isHit, String originalQueryName, StringBuffer similarityBuffer, StringBuffer hitListBuffer) {
-		similarityBuffer.append(maxSimilarity + ",");
-		if (isHit) {
-			hitListBuffer.append("-1,");
-		}
-		else {
-			hitListBuffer.append("0,");
-		}
+		return similarityBuffer.toString();
 	}
 	
 	private float calculateSimilarity(File queryPath, File resourcesPath, String originalClassName, String candidateWSDLName) {
@@ -206,46 +152,5 @@ public class DataSetLoader implements Serializable{
 		}
 		
 		return serviceSimilarityValue;
-	}
-	
-	
-	
-	private Map<String, String> createHitlistTable(File hitListDir, String hitListFileName) {
-		System.out.println(hitListDir);
-		HashMap<String, String> aux = new HashMap<String, String>();
-		for (String actualHitListDir : hitListDir.list()) {
-			String actualHitListFile = hitListDir.getAbsolutePath() + File.separator +  actualHitListDir + File.separator + hitListFileName;
-			String queryName = actualHitListDir.substring(actualHitListDir.toString().lastIndexOf("#") + 1);
-			FileInputStream fis;
-			try {
-				fis = new FileInputStream(actualHitListFile);
-				InputStreamReader isr;
-				try {
-					isr = new InputStreamReader(fis, "UTF8");
-					BufferedReader br = new BufferedReader(isr);
-				    String linea;
-					try {
-						linea = br.readLine();
-						String hitName = "";
-				    	
-					    if (linea.contains("-")) {
-					    	hitName = linea.substring(linea.lastIndexOf(File.separator)+1,linea.lastIndexOf("-"));
-					    }
-					    else{
-					    	hitName = linea.substring(linea.lastIndexOf(File.separator)+1,linea.lastIndexOf("."));
-					    }
-					    aux.put(queryName.toLowerCase(), hitName);
-					    br.close();
-					} catch (IOException e) {
-						Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - i/o error in hitlist file: " + actualHitListFile);
-					}    
-				} catch (UnsupportedEncodingException e) {
-					Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - unknown hitlist file encoding");
-				} 
-			} catch (FileNotFoundException e) {
-				Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - missing " + actualHitListFile +  " hitlist file");
-			}
-		}
-		return aux;
 	}
 }

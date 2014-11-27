@@ -9,3 +9,4 @@ Log4j libraries (/lib/optional) must be moved to /lib.
 PROJECT
 All .class binaries must be included in the jar before running.
 Project jar must be copied into /lib/ext.
+,1
