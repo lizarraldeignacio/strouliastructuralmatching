@@ -1,12 +1,6 @@
 package com.isistan.structure.similarity;
 
-import com.google.common.collect.Lists;
 import com.isistan.util.Permutations;
-
-import gnu.trove.list.array.TByteArrayList;
-import gnu.trove.map.hash.TByteObjectHashMap;
-import gnu.trove.map.hash.TObjectByteHashMap;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -23,30 +17,55 @@ public class SimilarityCalculator implements Serializable{
 	 */
 	private static final long serialVersionUID = 2012752801233568847L;
 	private ParameterCombination mostSimilarCombination;
-	private TObjectByteHashMap<ISchemaType> byteMap;
-	private TByteObjectHashMap<ISchemaType> reverseByteMap;
 	private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	private Permutations<Object> permutator;
+	private static final int PERMUTATIONS_BLOCK_SIZE = 50;
 	
 	public SimilarityCalculator() {
-		byteMap = new TObjectByteHashMap<ISchemaType>();
-		reverseByteMap = new TByteObjectHashMap<ISchemaType>();
+		
 	}
 
-	private void getSimilarity(final ArrayList<ISchemaType> sourceTypes, final ArrayList<ISchemaType> targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
-		final LinkedList<TByteArrayList> permutations = Permutations.permuteUnique(byteArrayMapping(targetTypes));
-		int size = permutations.size() > Runtime.getRuntime().availableProcessors() ? permutations.size() / Runtime.getRuntime().availableProcessors() : permutations.size();  
-		List<List<TByteArrayList>> partitions = Lists.partition(permutations, size);
+	private <E> ArrayList<Object[]> permuteUnique(E[] list) {
+		Permutations p = new Permutations(list);
+		ArrayList<Object[]> permutations = new ArrayList<Object[]>();
+		while (p.hasNext()) { 
+			permutations.add(p.next().clone());
+		}
+		return permutations;
+	}
+	
+	private synchronized <E> ArrayList<Object[]> getNextNPermutations(int n) {
+		ArrayList<Object[]> permutations = new ArrayList<Object[]>();
+		int currentPermutation = 0;
+		while (permutator.hasNext() && currentPermutation < n) { 
+			permutations.add(permutator.next().clone());
+			currentPermutation++;
+		}
+		return permutations;
+	}
+	
+	
+	private void getSimilarity(final List<ISchemaType> sourceTypes, Object[] targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
+		permutator = new Permutations<>(targetTypes);
 		List<Future<?>> futures = new LinkedList<Future<?>>();
-		for (final List<TByteArrayList> part : partitions) {
+		for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
 			futures.add(executor.submit(new Runnable() {	
 				@Override
 				public void run() {
-					for (TByteArrayList list : part) {
-						ParameterCombination combination = new ParameterCombination(sourceTypes, reverseByteArrayMapping(list), sourceReturnType, targetReturnType, 0);
-						combination.calculateSimilarity();
-						if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
-							mostSimilarCombination = (ParameterCombination) combination.clone();
+					ParameterCombination combination = new ParameterCombination();
+					ArrayList<Object[]> permutations = getNextNPermutations(PERMUTATIONS_BLOCK_SIZE);
+					while (permutations.size() > 0) {
+						for (Object[] array : permutations) {
+							combination.setSourceParameters(sourceTypes);
+							combination.setTargetParameters(array);
+							combination.setSourceReturnType(sourceReturnType);
+							combination.setTargetReturnType(targetReturnType);
+							combination.calculateSimilarity();
+							if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
+								mostSimilarCombination = (ParameterCombination) combination.clone();
+							}
 						}
+						permutations = getNextNPermutations(PERMUTATIONS_BLOCK_SIZE);
 					}
 				}
 			}));
@@ -62,40 +81,19 @@ public class SimilarityCalculator implements Serializable{
 		}
 	}
 	
-	private ArrayList<ISchemaType> reverseByteArrayMapping(TByteArrayList mapping) {
-		ArrayList<ISchemaType> reverseArray = new ArrayList<ISchemaType>();
-		for (int i = 0; i < mapping.size(); i++) {
-			reverseArray.add(reverseByteMap.get(mapping.getQuick(i)));
-		}
-		return reverseArray;
-	}
-	
-	private TByteArrayList byteArrayMapping(ArrayList<ISchemaType> types) {
-		byteMap.clear();
-		reverseByteMap.clear();
-		TByteArrayList byteMapping = new TByteArrayList(types.size());
-		byte index = 0;
-		for (int i = 0; i < types.size(); i++) {
-			ISchemaType iSchemaType = types.get(i);
-			if (!byteMap.contains(iSchemaType)) {
-				byteMap.put(iSchemaType, index);
-				reverseByteMap.put(index, iSchemaType);
-				index++;
-			}
-			byteMapping.add(byteMap.get(iSchemaType));
-		}
-		return byteMapping;
-	}
-	
 	public ParameterCombination getMaxSimilarity(final ParameterCombination initialCombination) {
 		final ArrayList<ISchemaType> sourceTypes = new ArrayList<ISchemaType>(initialCombination.getSourceParameters());
-		final ArrayList<ISchemaType> targetTypes = new ArrayList<ISchemaType>(initialCombination.getTargetParameters());
+		final Object[] targetTypes = initialCombination.getTargetParameters();
 		mostSimilarCombination= new ParameterCombination();
-		if (sourceTypes.size() <= targetTypes.size()) {
+		if (sourceTypes.size() <= targetTypes.length) {
 			getSimilarity(sourceTypes, targetTypes, initialCombination.getSourceReturnType(), initialCombination.getTargetReturnType());
 		}
 		else {
-			getSimilarity(targetTypes, sourceTypes, initialCombination.getSourceReturnType(), initialCombination.getTargetReturnType());
+			final List<ISchemaType> target = new LinkedList<ISchemaType>();
+			for(int i = 0; i < targetTypes.length; i++){
+				target.add((ISchemaType) targetTypes[i]);
+			}
+			getSimilarity(target, sourceTypes.toArray(), initialCombination.getSourceReturnType(), initialCombination.getTargetReturnType());
 		}
 		return mostSimilarCombination;
 	}

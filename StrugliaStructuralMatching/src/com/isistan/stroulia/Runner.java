@@ -27,7 +27,7 @@ public class Runner {
 	protected static Grid grid = null;
 
 	public enum GridCacheObjects {
-		PROPERTIES, SIMILARITY_BUFFER, HITLIST_BUFFER, DATASET_PROPERTIES, HITLIST_TABLE
+		PROPERTIES, SIMILARITY_BUFFER, DATASET_PROPERTIES, HITLIST_TABLE
 	}
 	
 	@SuppressWarnings("unchecked")
