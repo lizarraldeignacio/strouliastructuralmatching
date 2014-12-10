@@ -50,7 +50,7 @@ public class SchemaSimpleType implements ISchemaType{
 	
 	@Override
 	public int hashCode() {
-		return this.getType().hashCode();
+		return this.getTypeName().hashCode();
 	}
 	
 	@Override

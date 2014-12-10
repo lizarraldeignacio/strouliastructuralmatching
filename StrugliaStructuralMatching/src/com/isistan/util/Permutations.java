@@ -25,7 +25,6 @@ public class Permutations<E> implements  Iterator<E[]>{
             }
             ind[i] = n.byteValue();
         }
-        
         Arrays.sort(ind);//start with ascending sequence of integers
         //output = new E[arr.length]; <-- cannot do in Java with generics, so use reflection
         output = (E[]) Array.newInstance(arr.getClass().getComponentType(), arr.length);

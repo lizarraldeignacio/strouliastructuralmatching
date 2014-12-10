@@ -19,13 +19,13 @@ public class SimilarityCalculator implements Serializable{
 	private ParameterCombination mostSimilarCombination;
 	private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	private Permutations<Object> permutator;
-	private static final int PERMUTATIONS_BLOCK_SIZE = 50;
+	//private static final int PERMUTATIONS_BLOCK_SIZE = 10000;
 	
 	public SimilarityCalculator() {
 		
 	}
 
-	private <E> ArrayList<Object[]> permuteUnique(E[] list) {
+	/*private <E> ArrayList<Object[]> permuteUnique(E[] list) {
 		Permutations p = new Permutations(list);
 		ArrayList<Object[]> permutations = new ArrayList<Object[]>();
 		while (p.hasNext()) { 
@@ -42,18 +42,48 @@ public class SimilarityCalculator implements Serializable{
 			currentPermutation++;
 		}
 		return permutations;
-	}
-	
+	}*/
 	
 	private void getSimilarity(final List<ISchemaType> sourceTypes, Object[] targetTypes, final ISchemaType sourceReturnType, final ISchemaType targetReturnType) {
 		permutator = new Permutations<>(targetTypes);
+		/*ArrayList<Object[]> permutations = getNextNPermutations(PERMUTATIONS_BLOCK_SIZE);
+		int size = permutations.size();
+		while (permutations.size() > 0) {
+			permutations= getNextNPermutations(PERMUTATIONS_BLOCK_SIZE);
+			size+= permutations.size();
+		}
+		System.out.println("Tamaño Final: " + size);*/
 		List<Future<?>> futures = new LinkedList<Future<?>>();
 		for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
 			futures.add(executor.submit(new Runnable() {	
 				@Override
 				public void run() {
 					ParameterCombination combination = new ParameterCombination();
-					ArrayList<Object[]> permutations = getNextNPermutations(PERMUTATIONS_BLOCK_SIZE);
+					Object[] permutation = null;
+					synchronized (permutator) {
+						if (permutator.hasNext())
+							permutation = permutator.next();
+					}
+					
+					while (permutation != null) {
+							combination.setSourceParameters(sourceTypes);
+							combination.setTargetParameters(permutation);
+							combination.setSourceReturnType(sourceReturnType);
+							combination.setTargetReturnType(targetReturnType);
+							combination.calculateSimilarity();
+							synchronized (this) {
+								if (combination.getSimilarity() > mostSimilarCombination.getSimilarity()) {
+									mostSimilarCombination = (ParameterCombination) combination.clone();
+								}
+							}
+							synchronized (permutator) {
+								if (permutator.hasNext())
+									permutation = permutator.next();
+								else
+									permutation = null;
+							}
+					}
+					/*ArrayList<Object[]> permutations = getNextNPermutations(PERMUTATIONS_BLOCK_SIZE);
 					while (permutations.size() > 0) {
 						for (Object[] array : permutations) {
 							combination.setSourceParameters(sourceTypes);
@@ -66,7 +96,7 @@ public class SimilarityCalculator implements Serializable{
 							}
 						}
 						permutations = getNextNPermutations(PERMUTATIONS_BLOCK_SIZE);
-					}
+					}*/
 				}
 			}));
 		}
