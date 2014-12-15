@@ -11,9 +11,13 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Logger;
 import org.gridgain.grid.GridGain;
@@ -34,9 +38,12 @@ public class DataSetLoader implements Serializable{
 	protected ExecutorService gridExecutor = GridGain.grid().compute().executorService();
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
+	private static final String CANCELED_LOG_FILENAME = "report.txt";
+	private StringBuffer tasksBuffer;
 	
 	public void run() {
 		long startTime = System.nanoTime();
+		tasksBuffer = new StringBuffer();
 		FileInputStream datasetPropertiesInStream;
 		final DataSetProperties datasetProperties = new DataSetProperties();
 		StringBuffer similarityBuffer = new StringBuffer();
@@ -86,10 +93,15 @@ public class DataSetLoader implements Serializable{
 		gridExecutor.shutdown();
 		System.out.println("Writing Files...");
 		FileWriter similarityResultsFile;
+		FileWriter canceledTasksFile;
 		try {
 			similarityResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.RESULTS_FILENAME)));
 			BufferedWriter similarityResultsBuffer = new BufferedWriter(similarityResultsFile);
+			canceledTasksFile = new FileWriter(new File(CANCELED_LOG_FILENAME));
+			BufferedWriter canceledTasksBuffer = new BufferedWriter(canceledTasksFile);
+			canceledTasksBuffer.write(tasksBuffer.toString());
 			similarityResultsBuffer.write(similarityBuffer.toString());
+			canceledTasksBuffer.close();
 			similarityResultsBuffer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -137,13 +149,28 @@ public class DataSetLoader implements Serializable{
 		File wsdlFile = new File(resourcesPath + File.separator + candidateWSDLName.toLowerCase());
 		Collection<IOperation> wsdlOperations = loader.load(wsdlFile);
 		float serviceSimilarityValue = 0;
+		ExecutorService timeoutExecutor = Executors.newSingleThreadExecutor();
 		if (wsdlOperations != null) {
 			Iterator<IOperation> iterWSDLOp = wsdlOperations.iterator();
 			if (iterClassOp.hasNext()) {
-				SimpleOperation queryOP = (SimpleOperation) iterClassOp.next();
+				final SimpleOperation queryOP = (SimpleOperation) iterClassOp.next();
 				while(iterWSDLOp.hasNext()) {
-					IOperation targetOp = iterWSDLOp.next();
-					ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
+					final IOperation targetOp = iterWSDLOp.next();
+					ParameterCombination combination = null;
+					try {
+						combination = timeoutExecutor.submit(new Callable<ParameterCombination>() {
+							@Override
+							public ParameterCombination call() throws Exception {
+								return queryOP.getMaxSimilarity(targetOp);
+							}
+						}).get(5, TimeUnit.MINUTES);
+						tasksBuffer.append("Finished - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "/n");
+					} catch (InterruptedException e) {
+					} catch (ExecutionException e) {
+					} catch (TimeoutException e) {
+						tasksBuffer.append("Canceled - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "/n");
+					} 
+					//ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
 					if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
 						serviceSimilarityValue = combination.getSimilarity();
 					}
