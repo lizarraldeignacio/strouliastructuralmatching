@@ -20,10 +20,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Logger;
+import org.gridgain.grid.GridException;
 import org.gridgain.grid.GridGain;
 import org.gridgain.grid.GridIllegalStateException;
+import org.gridgain.grid.cache.GridCache;
+import org.gridgain.grid.cache.GridCacheTx;
 import org.gridgain.grid.lang.GridCallable;
 
+import com.isistan.stroulia.Runner;
 import com.isistan.structure.similarity.IOperation;
 import com.isistan.structure.similarity.ParameterCombination;
 import com.isistan.structure.similarity.SimpleOperation;
@@ -39,11 +43,15 @@ public class DataSetLoader implements Serializable{
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	private static final String CANCELED_LOG_FILENAME = "report.txt";
-	private StringBuffer tasksBuffer;
+	private static final String TASK_LOG = "taskLog";
 	
 	public void run() {
 		long startTime = System.nanoTime();
-		tasksBuffer = new StringBuffer();
+		try {
+			GridGain.grid().cache(Runner.GRID_CACHE_NAME).putIfAbsent(TASK_LOG, new StringBuffer());
+		} catch (GridIllegalStateException | GridException e2) {
+			e2.printStackTrace();
+		}
 		FileInputStream datasetPropertiesInStream;
 		final DataSetProperties datasetProperties = new DataSetProperties();
 		StringBuffer similarityBuffer = new StringBuffer();
@@ -99,7 +107,7 @@ public class DataSetLoader implements Serializable{
 			BufferedWriter similarityResultsBuffer = new BufferedWriter(similarityResultsFile);
 			canceledTasksFile = new FileWriter(new File(CANCELED_LOG_FILENAME));
 			BufferedWriter canceledTasksBuffer = new BufferedWriter(canceledTasksFile);
-			canceledTasksBuffer.write(tasksBuffer.toString());
+			canceledTasksBuffer.write(getTaskLog());
 			similarityResultsBuffer.write(similarityBuffer.toString());
 			canceledTasksBuffer.close();
 			similarityResultsBuffer.close();
@@ -164,11 +172,11 @@ public class DataSetLoader implements Serializable{
 								return queryOP.getMaxSimilarity(targetOp);
 							}
 						}).get(5, TimeUnit.MINUTES);
-						tasksBuffer.append("Finished - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "/n");
+						logTaskMessage("Finished - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "/n");
 					} catch (InterruptedException e) {
 					} catch (ExecutionException e) {
 					} catch (TimeoutException e) {
-						tasksBuffer.append("Canceled - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "/n");
+						logTaskMessage("Canceled - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "/n");
 					} 
 					//ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
 					if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
@@ -179,5 +187,32 @@ public class DataSetLoader implements Serializable{
 		}
 		
 		return serviceSimilarityValue;
+	}
+	
+	private void logTaskMessage(String msg) {
+		GridCache<Object, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
+		GridCacheTx tx = cache.txStart();
+		try {
+			StringBuffer buffer = (StringBuffer) cache.get(TASK_LOG);
+			buffer.append(msg);
+			cache.putx(TASK_LOG, buffer);
+			tx.commitAsync();
+			tx.close();
+		} catch (GridException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private String getTaskLog() {
+		GridCache<Object, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
+		GridCacheTx tx = cache.txStart();
+		StringBuffer buffer = null;
+		try {
+			buffer = (StringBuffer) cache.get(TASK_LOG);
+			tx.close();
+		} catch (GridException e) {
+			e.printStackTrace();
+		}
+		return buffer != null ? buffer.toString() : new String();
 	}
 }
