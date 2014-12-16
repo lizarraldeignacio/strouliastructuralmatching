@@ -133,7 +133,7 @@ public class DataSetLoader implements Serializable{
 	    			String wsdlName = line.split(",")[0];
 		    		String originalClassName  = "query." + Character.toUpperCase(originalQueryName.charAt(0)) + originalQueryName.substring(1);
 					float maxSimilarity = calculateSimilarity(queryPath, resourcesPath, originalClassName, wsdlName);
-					similarityBuffer.append(maxSimilarity + ",");
+					similarityBuffer.append(Float.toString(maxSimilarity) + ",");
 		    	}
 		    	line = br.readLine();
 		    }
@@ -172,11 +172,11 @@ public class DataSetLoader implements Serializable{
 								return queryOP.getMaxSimilarity(targetOp);
 							}
 						}).get(5, TimeUnit.MINUTES);
-						logTaskMessage("Finished - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "/n");
+						logTaskMessage("Finished - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "\n");
 					} catch (InterruptedException e) {
 					} catch (ExecutionException e) {
 					} catch (TimeoutException e) {
-						logTaskMessage("Canceled - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "/n");
+						logTaskMessage("Canceled - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "\n");
 					} 
 					//ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
 					if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
