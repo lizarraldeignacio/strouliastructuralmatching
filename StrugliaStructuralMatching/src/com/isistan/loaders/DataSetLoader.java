@@ -46,7 +46,6 @@ public class DataSetLoader implements Serializable{
 	private static final String TASK_LOG = "taskLog";
 	
 	public void run() {
-		long startTime = System.nanoTime();
 		try {
 			GridGain.grid().cache(Runner.GRID_CACHE_NAME).putIfAbsent(TASK_LOG, new StringBuffer());
 		} catch (GridIllegalStateException | GridException e2) {
@@ -114,9 +113,7 @@ public class DataSetLoader implements Serializable{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		long endTime = System.nanoTime();
 		System.out.println("Done!");
-		System.out.println("Total time (in minutes): " + (endTime-startTime)/(1000000000*60));
 	}
 
 	private String executeInterfaceCompatibility(File resourcesPath, File queryPath, String originalQuery) {
@@ -177,7 +174,7 @@ public class DataSetLoader implements Serializable{
 					} catch (ExecutionException e) {
 					} catch (TimeoutException e) {
 						logTaskMessage("Canceled - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "\n");
-					} 
+					}
 					//ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
 					if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
 						serviceSimilarityValue = combination.getSimilarity();

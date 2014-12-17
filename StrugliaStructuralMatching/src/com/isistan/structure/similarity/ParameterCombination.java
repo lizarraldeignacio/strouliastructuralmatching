@@ -12,31 +12,15 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 	 * 
 	 */
 	private static final long serialVersionUID = 3017260158307953234L;
-	private List<ISchemaType> sourceParameters;
-	private Object[] targetParameters;
+	private LinkedList<ISchemaType> sourceParameters;
+	private LinkedList<ISchemaType> targetParameters;
 	private ISchemaType sourceReturnType;
 	private ISchemaType targetReturnType;
 	private float similarity = 0;
 	
-	public void setSimilarity(float similarity) {
-		this.similarity = similarity;
-	}
-
-	public void setSourceParameters(List<ISchemaType> sourceParameters) {
-		this.sourceParameters = sourceParameters;
-	}
-
-	/*public void setTargetParameters(List<ISchemaType> targetParameters) {
-		this.targetParameters = targetParameters;
-	}*/
-
-	public void setTargetParameters(Object[] targetParameters) {
-		
-		this.targetParameters = targetParameters;
-	}
-	
 	public ParameterCombination() {
 		sourceParameters = new LinkedList<ISchemaType>();
+		targetParameters = new LinkedList<ISchemaType>();
 	}
 	
 	public ISchemaType getSourceReturnType() {
@@ -55,35 +39,25 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 		this.targetReturnType = targetReturnType;
 	}
 
-	public ParameterCombination(List<ISchemaType> sourceParameters, List<ISchemaType> targetParameters, ISchemaType sourceReturnType, ISchemaType targetReturnType, float similarity) {
+	public ParameterCombination(List<ISchemaType> sourceParameters, List<ISchemaType> targetParameters, ISchemaType sourceReturnType, ISchemaType targetReturnType) {
 		this.sourceParameters = new LinkedList<ISchemaType>(sourceParameters);
-		this.targetParameters = targetParameters.toArray();
+		this.targetParameters = new LinkedList<ISchemaType>(targetParameters);
 		this.sourceReturnType = sourceReturnType;
 		this.targetReturnType = targetReturnType;
-		this.similarity = similarity;
 	}
 	
-	public ParameterCombination(List<ISchemaType> sourceParameters, Object[] targetParameters, ISchemaType sourceReturnType, ISchemaType targetReturnType, float similarity) {
-		this.sourceParameters = new LinkedList<ISchemaType>(sourceParameters);
-		this.targetParameters = targetParameters;
-		this.sourceReturnType = sourceReturnType;
-		this.targetReturnType = targetReturnType;
-		this.similarity = similarity;
-	}
-	
-	
+
 	public void calculateSimilarity() {
 		Iterator<ISchemaType> sourceTypesIterator = sourceParameters.iterator();
+		Iterator<ISchemaType> targetTypesIterator = targetParameters.iterator();
 		similarity = 0;
 		if (sourceReturnType != null && targetReturnType != null) {
 			similarity += sourceReturnType.similarity(targetReturnType);
 		}
-		int i = 0;
-		while (sourceTypesIterator.hasNext() && targetParameters.length < i) {
+		while (sourceTypesIterator.hasNext() && targetTypesIterator.hasNext()) {
 			ISchemaType sType= sourceTypesIterator.next();
-			ISchemaType tType= (ISchemaType) targetParameters[i];
+			ISchemaType tType= targetTypesIterator.next();
 			similarity += sType.similarity(tType);
-			i++;
 		}
 	}
 	
@@ -100,14 +74,41 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 		sourceParameters.add(parameter);
 	}
 	
+	public void addFirstTargetParameter(ISchemaType parameter) {
+		targetParameters.addFirst(parameter);
+	}
 	
-	public Object[] getTargetParameters() {
+	public void addFirstSourceParameter(ISchemaType parameter) {
+		sourceParameters.addFirst(parameter);
+	}
+	
+	public void addTargetParameter(ISchemaType parameter) {
+		targetParameters.add(parameter);
+	}
+	
+	public void removeLastTargetParameter() {
+		targetParameters.removeLast();
+	}
+	
+	public void removeLastSourceParameter() {
+		sourceParameters.removeLast();
+	}
+	
+	public ISchemaType popTargetParameter() {
+		return targetParameters.pop();
+	}
+	
+	public ISchemaType popSourceParameter() {
+		return sourceParameters.pop();
+	}
+	
+	public Collection<ISchemaType> getTargetParameters() {
 		return targetParameters;
 	}
 	
 	@Override
 	public Object clone() {
-		return new ParameterCombination(sourceParameters, targetParameters, sourceReturnType, targetReturnType, this.similarity);
+		return new ParameterCombination(sourceParameters, targetParameters, sourceReturnType, targetReturnType);
 	}
 
 	@Override

@@ -64,7 +64,7 @@ public class SimpleOperation implements IOperation, Serializable{
 	
 	@Override
 	public ParameterCombination getMaxSimilarity(IOperation operation) {
-		ParameterCombination initialCombination = new ParameterCombination((LinkedList<ISchemaType>)parameters, (LinkedList<ISchemaType>)operation.getParameters(), returnType, ((SimpleOperation)operation).getReturnType(), 0);
+		ParameterCombination initialCombination = new ParameterCombination((LinkedList<ISchemaType>)parameters, (LinkedList<ISchemaType>)operation.getParameters(), returnType, ((SimpleOperation)operation).getReturnType());
 		SimilarityCalculator calculator = new SimilarityCalculator();
 		return calculator.getMaxSimilarity(initialCombination);
 	}
