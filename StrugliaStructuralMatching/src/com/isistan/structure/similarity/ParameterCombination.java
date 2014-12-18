@@ -102,7 +102,7 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 		return sourceParameters.pop();
 	}
 	
-	public Collection<ISchemaType> getTargetParameters() {
+	public List<ISchemaType> getTargetParameters() {
 		return targetParameters;
 	}
 	

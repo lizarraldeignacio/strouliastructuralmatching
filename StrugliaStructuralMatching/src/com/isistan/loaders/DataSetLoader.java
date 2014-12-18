@@ -24,7 +24,9 @@ import org.gridgain.grid.GridException;
 import org.gridgain.grid.GridGain;
 import org.gridgain.grid.GridIllegalStateException;
 import org.gridgain.grid.cache.GridCache;
+import org.gridgain.grid.cache.GridCacheFlag;
 import org.gridgain.grid.cache.GridCacheTx;
+import org.gridgain.grid.cache.GridCacheTxState;
 import org.gridgain.grid.lang.GridCallable;
 
 import com.isistan.stroulia.Runner;
@@ -170,14 +172,13 @@ public class DataSetLoader implements Serializable{
 							}
 						}).get(5, TimeUnit.MINUTES);
 						logTaskMessage("Finished - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "\n");
+						if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
+							serviceSimilarityValue = combination.getSimilarity();
+						}
 					} catch (InterruptedException e) {
 					} catch (ExecutionException e) {
 					} catch (TimeoutException e) {
 						logTaskMessage("Canceled - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "\n");
-					}
-					//ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
-					if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
-						serviceSimilarityValue = combination.getSimilarity();
 					}
 				}
 			}
@@ -188,8 +189,8 @@ public class DataSetLoader implements Serializable{
 	
 	private void logTaskMessage(String msg) {
 		GridCache<Object, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
-		GridCacheTx tx = cache.txStart();
-		try {
+		cache.flagsOn(GridCacheFlag.CLONE); 
+		try (GridCacheTx tx = cache.txStart()) {
 			StringBuffer buffer = (StringBuffer) cache.get(TASK_LOG);
 			buffer.append(msg);
 			cache.putx(TASK_LOG, buffer);
@@ -202,9 +203,9 @@ public class DataSetLoader implements Serializable{
 	
 	private String getTaskLog() {
 		GridCache<Object, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
-		GridCacheTx tx = cache.txStart();
 		StringBuffer buffer = null;
-		try {
+		cache.flagsOn(GridCacheFlag.CLONE); 
+		try (GridCacheTx tx = cache.txStart()) {
 			buffer = (StringBuffer) cache.get(TASK_LOG);
 			tx.close();
 		} catch (GridException e) {
