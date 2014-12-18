@@ -26,7 +26,6 @@ import org.gridgain.grid.GridIllegalStateException;
 import org.gridgain.grid.cache.GridCache;
 import org.gridgain.grid.cache.GridCacheFlag;
 import org.gridgain.grid.cache.GridCacheTx;
-import org.gridgain.grid.cache.GridCacheTxState;
 import org.gridgain.grid.lang.GridCallable;
 
 import com.isistan.stroulia.Runner;
@@ -44,15 +43,8 @@ public class DataSetLoader implements Serializable{
 	protected ExecutorService gridExecutor = GridGain.grid().compute().executorService();
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
-	private static final String CANCELED_LOG_FILENAME = "report.txt";
-	private static final String TASK_LOG = "taskLog";
 	
 	public void run() {
-		try {
-			GridGain.grid().cache(Runner.GRID_CACHE_NAME).putIfAbsent(TASK_LOG, new StringBuffer());
-		} catch (GridIllegalStateException | GridException e2) {
-			e2.printStackTrace();
-		}
 		FileInputStream datasetPropertiesInStream;
 		final DataSetProperties datasetProperties = new DataSetProperties();
 		StringBuffer similarityBuffer = new StringBuffer();
@@ -102,15 +94,10 @@ public class DataSetLoader implements Serializable{
 		gridExecutor.shutdown();
 		System.out.println("Writing Files...");
 		FileWriter similarityResultsFile;
-		FileWriter canceledTasksFile;
 		try {
 			similarityResultsFile = new FileWriter(new File(datasetProperties.getProperty(DataSetProperty.RESULTS_FILENAME)));
 			BufferedWriter similarityResultsBuffer = new BufferedWriter(similarityResultsFile);
-			canceledTasksFile = new FileWriter(new File(CANCELED_LOG_FILENAME));
-			BufferedWriter canceledTasksBuffer = new BufferedWriter(canceledTasksFile);
-			canceledTasksBuffer.write(getTaskLog());
 			similarityResultsBuffer.write(similarityBuffer.toString());
-			canceledTasksBuffer.close();
 			similarityResultsBuffer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -156,61 +143,20 @@ public class DataSetLoader implements Serializable{
 		File wsdlFile = new File(resourcesPath + File.separator + candidateWSDLName.toLowerCase());
 		Collection<IOperation> wsdlOperations = loader.load(wsdlFile);
 		float serviceSimilarityValue = 0;
-		ExecutorService timeoutExecutor = Executors.newSingleThreadExecutor();
 		if (wsdlOperations != null) {
 			Iterator<IOperation> iterWSDLOp = wsdlOperations.iterator();
 			if (iterClassOp.hasNext()) {
 				final SimpleOperation queryOP = (SimpleOperation) iterClassOp.next();
 				while(iterWSDLOp.hasNext()) {
 					final IOperation targetOp = iterWSDLOp.next();
-					ParameterCombination combination = null;
-					try {
-						combination = timeoutExecutor.submit(new Callable<ParameterCombination>() {
-							@Override
-							public ParameterCombination call() throws Exception {
-								return queryOP.getMaxSimilarity(targetOp);
-							}
-						}).get(5, TimeUnit.MINUTES);
-						logTaskMessage("Finished - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "\n");
-						if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
-							serviceSimilarityValue = combination.getSimilarity();
-						}
-					} catch (InterruptedException e) {
-					} catch (ExecutionException e) {
-					} catch (TimeoutException e) {
-						logTaskMessage("Canceled - Query: " + originalClassName + " Query operation: " + queryOP.getName() + " Service: " + candidateWSDLName + " Service operation: " + ((SimpleOperation)targetOp).getName() + "\n");
+					ParameterCombination combination = queryOP.getMaxSimilarity(targetOp);
+					if ((combination != null) && (combination.getSimilarity() > serviceSimilarityValue)) {
+						serviceSimilarityValue = combination.getSimilarity();
 					}
 				}
 			}
 		}
 		
 		return serviceSimilarityValue;
-	}
-	
-	private void logTaskMessage(String msg) {
-		GridCache<Object, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
-		cache.flagsOn(GridCacheFlag.CLONE); 
-		try (GridCacheTx tx = cache.txStart()) {
-			StringBuffer buffer = (StringBuffer) cache.get(TASK_LOG);
-			buffer.append(msg);
-			cache.putx(TASK_LOG, buffer);
-			tx.commitAsync();
-			tx.close();
-		} catch (GridException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private String getTaskLog() {
-		GridCache<Object, Object> cache = GridGain.grid().cache(Runner.GRID_CACHE_NAME);
-		StringBuffer buffer = null;
-		cache.flagsOn(GridCacheFlag.CLONE); 
-		try (GridCacheTx tx = cache.txStart()) {
-			buffer = (StringBuffer) cache.get(TASK_LOG);
-			tx.close();
-		} catch (GridException e) {
-			e.printStackTrace();
-		}
-		return buffer != null ? buffer.toString() : new String();
 	}
 }
