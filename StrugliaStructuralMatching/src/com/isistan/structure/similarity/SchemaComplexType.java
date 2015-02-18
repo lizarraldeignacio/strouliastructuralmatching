@@ -5,12 +5,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridGain;
-
 import com.isistan.loaders.StrouliaMatchingProperties;
 import com.isistan.loaders.StrouliaPropertyName;
-import com.isistan.stroulia.Runner;
 
 public class SchemaComplexType implements ISchemaType, Serializable{
 	
@@ -108,13 +104,8 @@ public class SchemaComplexType implements ISchemaType, Serializable{
 		//Calcúlo el valor final de similitud sumando la máxima similitud de cada tipo
 		for (i = 0; i < maxSimilarityArray.length; i++)
 			max += maxSimilarityArray[i];
-			StrouliaMatchingProperties properties = null;
-			try {
-				properties = (StrouliaMatchingProperties) GridGain.grid().cache(Runner.GRID_CACHE_NAME).get(Runner.GridCacheObjects.PROPERTIES);
-			} catch (GridException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			StrouliaMatchingProperties properties = StrouliaMatchingProperties.instance();
+			
 			if (properties == null) {
 				throw new NullPointerException("Couldn't get properties structure");
 			}

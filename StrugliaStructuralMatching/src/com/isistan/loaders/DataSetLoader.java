@@ -10,25 +10,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Logger;
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridGain;
-import org.gridgain.grid.GridIllegalStateException;
-import org.gridgain.grid.cache.GridCache;
-import org.gridgain.grid.cache.GridCacheFlag;
-import org.gridgain.grid.cache.GridCacheTx;
-import org.gridgain.grid.lang.GridCallable;
 
-import com.isistan.stroulia.Runner;
 import com.isistan.structure.similarity.IOperation;
 import com.isistan.structure.similarity.ParameterCombination;
 import com.isistan.structure.similarity.SimpleOperation;
@@ -40,7 +24,7 @@ public class DataSetLoader implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -163857493039425244L;
-	protected ExecutorService gridExecutor = GridGain.grid().compute().executorService();
+	//protected ExecutorService gridExecutor = GridGain.grid().compute().executorService();
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	
@@ -56,42 +40,17 @@ public class DataSetLoader implements Serializable{
 				  System.out.println("No files into the specified folder");
 			}
 			else {
-				LinkedList<Future<String>> futures = new LinkedList<Future<String>>();
 				System.out.println("Analyzing Folder: ");
 				for (final File inputFile : inputDir.listFiles()) {
 					if (inputFile.toString().endsWith(".txt")){													
-						futures.add(
-						gridExecutor.submit(new GridCallable<String>() {
-							/**
-							 * 
-							 */
-							private static final long serialVersionUID = 2789954077792873576L;
-
-							@Override
-							public String call() throws Exception {
-								return executeInterfaceCompatibility(new File(datasetProperties.getProperty(DataSetProperty.RESOURCES_PATH)),
-										new File(datasetProperties.getProperty(DataSetProperty.QUERY_PATH)), inputFile.toString());
-							}
-						}));
+						 similarityBuffer.append(executeInterfaceCompatibility(new File(datasetProperties.getProperty(DataSetProperty.RESOURCES_PATH)),
+										new File(datasetProperties.getProperty(DataSetProperty.QUERY_PATH)), inputFile.toString()));
 						}
-				}
-			
-				for (Future<String> future : futures) {
-					try {
-						similarityBuffer.append(future.get());
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					} catch (ExecutionException e) {
-						e.printStackTrace();
-					}
 				}
 			}
 		} catch (FileNotFoundException e) {
 			Logger.getLogger(LOADER_LOG).fatal("Dataset Loader Error - missing datasetProperties.xml");
-		} catch (GridIllegalStateException e1) {
-			e1.printStackTrace();
 		}
-		gridExecutor.shutdown();
 		System.out.println("Writing Files...");
 		FileWriter similarityResultsFile;
 		try {

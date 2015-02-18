@@ -1,11 +1,7 @@
 package com.isistan.structure.similarity;
 
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridGain;
-
 import com.isistan.loaders.PrimitiveType;
 import com.isistan.loaders.StrouliaMatchingProperties;
-import com.isistan.stroulia.Runner;
 
 public class SchemaSimpleType implements ISchemaType{
 
@@ -30,12 +26,7 @@ public class SchemaSimpleType implements ISchemaType{
 
 	@Override
 	public float simpleTypeSimilarity(SchemaSimpleType type) {
-		StrouliaMatchingProperties properties = null;
-		try {
-			properties = (StrouliaMatchingProperties) GridGain.grid().cache(Runner.GRID_CACHE_NAME).get(Runner.GridCacheObjects.PROPERTIES);
-		} catch (GridException e) {
-			e.printStackTrace();
-		}
+		StrouliaMatchingProperties properties = StrouliaMatchingProperties.instance();
 		if (properties == null) {
 			throw new NullPointerException("Couldn't get properties structure");
 		}
