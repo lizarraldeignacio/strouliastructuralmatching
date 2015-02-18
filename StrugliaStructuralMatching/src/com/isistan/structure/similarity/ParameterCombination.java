@@ -1,12 +1,17 @@
 package com.isistan.structure.similarity;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ParameterCombination implements Cloneable, Comparable<ParameterCombination>{
+public class ParameterCombination implements Cloneable, Comparable<ParameterCombination>, Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3017260158307953234L;
 	private LinkedList<ISchemaType> sourceParameters;
 	private LinkedList<ISchemaType> targetParameters;
 	private ISchemaType sourceReturnType;
@@ -97,7 +102,7 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 		return sourceParameters.pop();
 	}
 	
-	public Collection<ISchemaType> getTargetParameters() {
+	public List<ISchemaType> getTargetParameters() {
 		return targetParameters;
 	}
 	

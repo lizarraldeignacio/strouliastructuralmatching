@@ -1,5 +1,6 @@
 package com.isistan.structure.similarity;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -7,8 +8,12 @@ import java.util.LinkedList;
 import com.isistan.loaders.StrouliaMatchingProperties;
 import com.isistan.loaders.StrouliaPropertyName;
 
-public class SchemaComplexType implements ISchemaType{
+public class SchemaComplexType implements ISchemaType, Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6858981364469529030L;
 	private String name;
 	private String namespace;
 	private ComplexTypeOrdering ordering;
@@ -99,15 +104,29 @@ public class SchemaComplexType implements ISchemaType{
 		//Calcúlo el valor final de similitud sumando la máxima similitud de cada tipo
 		for (i = 0; i < maxSimilarityArray.length; i++)
 			max += maxSimilarityArray[i];
-		
-		Float bonus = Float.parseFloat(StrouliaMatchingProperties.instance().getProperty(StrouliaPropertyName.ORDERING_BONUS));
-		if (this.ordering != null) {
-			return this.ordering.equals(complexType.getOrdering()) ? max + bonus : max;
-		}
-		else {
-			return max;
-		}
-		
+			StrouliaMatchingProperties properties = StrouliaMatchingProperties.instance();
+			
+			if (properties == null) {
+				throw new NullPointerException("Couldn't get properties structure");
+			}
+			Float bonus = Float.parseFloat(properties.getProperty(StrouliaPropertyName.ORDERING_BONUS));
+			if (this.ordering != null) {
+				return this.ordering.equals(complexType.getOrdering()) ? max + bonus : max;
+			}
+			else {
+				return max;
+			}
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.getTypeName().hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		ISchemaType type = (ISchemaType) obj;
+		return type.getTypeName().equals(this.getTypeName());
 	}
 	
 	@Override
@@ -123,5 +142,10 @@ public class SchemaComplexType implements ISchemaType{
 		}
 		string.append("*********EndSubtypes********" + System.lineSeparator());
 		return string.toString();
+	}
+
+	@Override
+	public String getTypeName() {
+		return this.name;
 	}
 }

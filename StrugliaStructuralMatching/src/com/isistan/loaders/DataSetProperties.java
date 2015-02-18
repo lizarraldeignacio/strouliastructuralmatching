@@ -1,19 +1,19 @@
 package com.isistan.loaders;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.Properties;
 
 
-public class DataSetProperties {
-	private static DataSetProperties instance = new DataSetProperties();
+public class DataSetProperties implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -975444381728448751L;
 	private Properties properties;
 	
-	private DataSetProperties () {
+	public DataSetProperties () {
 		properties = new Properties();
-	}
-	
-	public static DataSetProperties instance() {
-		return instance;
 	}
 	
 	public void loadProperties(InputStream inStream) {
