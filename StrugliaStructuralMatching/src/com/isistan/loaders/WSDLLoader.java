@@ -64,10 +64,15 @@ public class WSDLLoader implements ITypeLoader{
 							QName inputMessageName = bindingOperation.getOperation().getInput().getMessageName();
 							List<Part> inputMessageParts = desc.getMessage(inputMessageName).getParts();
 							Output output = bindingOperation.getOperation().getOutput();
-							
 							Collection<ISchemaType> inputTypes = new LinkedList<ISchemaType>();
-							
-							Element inputElement = inputMessageParts.size() > 0 ? inputMessageParts.get(0).getElement() : null;
+							Element inputElement = null;
+							if (inputMessageParts != null && inputMessageParts.size() > 0 ) {
+								if (inputMessageParts.get(0) != null) {
+									if (desc.getTypes() != null) {
+										inputElement = inputMessageParts.get(0).getElement();
+									}
+								}
+							}
 							
 							SimpleOperation operation = new SimpleOperation();
 							operation.setName(bindingOperation.getQName().getLocalPart());
@@ -94,7 +99,14 @@ public class WSDLLoader implements ITypeLoader{
 								QName outputMessageName = output.getMessageName();
 								List<Part> outputMessageParts = desc.getMessage(outputMessageName).getParts();
 								Collection<ISchemaType> outputTypes = new LinkedList<ISchemaType>();
-								Element outputElement = outputMessageParts.size() > 0 ? outputMessageParts.get(0).getElement() : null;
+								Element outputElement = null;
+								if (outputMessageParts != null && outputMessageParts.size() > 0 ) {
+									if (outputMessageParts.get(0) != null) {
+										if (desc.getTypes() != null) {
+											outputElement = outputMessageParts.get(0).getElement();
+										}
+									}
+								}
 								if (outputElement != null) {
 									outputTypes = getEncapsulatedTypes(outputElement);
 									Iterator<ISchemaType> outIter = outputTypes.iterator();
@@ -114,8 +126,17 @@ public class WSDLLoader implements ITypeLoader{
 						e.printStackTrace();
 					}
 				 	
-				} catch (FileNotFoundException e) {
-					Logger.getLogger(Runner.LOADER_LOG).fatal("WSDL Loader Error - missing wsdl: " + file.getAbsolutePath());
+				} catch (FileNotFoundException|org.ow2.easywsdl.wsdl.api.WSDLException|java.lang.ClassCastException e) {
+					if (e instanceof FileNotFoundException) {
+						Logger.getLogger(Runner.LOADER_LOG).fatal("WSDL Loader Error - missing wsdl: " + file.getAbsolutePath());
+					}
+					else if (e instanceof org.ow2.easywsdl.wsdl.api.WSDLException) {
+						Logger.getLogger(Runner.LOADER_LOG).fatal("WSDL Loader Error - parser error: " + e.getMessage() + " " + file.getAbsolutePath());
+					}
+					else if (e instanceof java.lang.ClassCastException) {
+						Logger.getLogger(Runner.LOADER_LOG).fatal("WSDL Loader Error - invalid wsdl: " + e.getMessage() + " " + file.getAbsolutePath());
+					}
+					return null;
 				}
 			} catch (MalformedURLException e) {
 				// TODO Auto-generated catch block
@@ -126,7 +147,6 @@ public class WSDLLoader implements ITypeLoader{
 			e.printStackTrace();
 		}
 		} catch (WSDLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
@@ -177,24 +197,28 @@ public class WSDLLoader implements ITypeLoader{
 				if (simpleType.getRestriction() != null && !restriction.getBase().getLocalPart().toUpperCase().equals("ANYSIMPLETYPE")) {
 					primitiveTypeName = restriction.getBase().getLocalPart().toUpperCase();
 				}
-				PrimitiveType primitiveType = PrimitiveType.valueOf(primitiveTypeName);
-				if (primitiveType != null) {
-					returnType = new SchemaSimpleType(primitiveType);
+				try {
+					PrimitiveType primitiveType = PrimitiveType.valueOf(primitiveTypeName);
+					if (primitiveType != null) {
+						returnType = new SchemaSimpleType(primitiveType);
+					}
+				}
+				catch (IllegalArgumentException e) {
+					Logger.getLogger(Runner.LOADER_LOG).fatal("WSDL Loader Error - primitive type not found: " + primitiveTypeName);
 				}
 			}
 			else if (type instanceof ComplexType) {
 				String complexTypeName = type.getQName() != null? type.getQName().getLocalPart() : null;
-				
-				if(matchedTypes.containsKey(complexTypeName)) {
+				if(complexTypeName != null && matchedTypes.containsKey(complexTypeName.toLowerCase())) {
 					if (complexTypeName != null) {
-						returnType = matchedTypes.get(complexTypeName);
+						returnType = matchedTypes.get(complexTypeName.toLowerCase());
 					}
 				}
-				else if (!matchedTypes.containsKey(complexTypeName)) {
+				else if (complexTypeName != null && !matchedTypes.containsKey(complexTypeName)) {
 					ComplexType complexType = (ComplexType) type;
 					SchemaComplexType schemaComplexType = new SchemaComplexType();
 					if (complexTypeName != null) {
-						matchedTypes.put(complexTypeName, schemaComplexType);
+						matchedTypes.put(complexTypeName.toLowerCase(), schemaComplexType);
 					}
 					QName complexName = complexType.getQName();
 					schemaComplexType.setName(complexName == null ? "" : complexName.getLocalPart());

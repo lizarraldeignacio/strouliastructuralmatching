@@ -24,7 +24,6 @@ public class DataSetLoader implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -163857493039425244L;
-	//protected ExecutorService gridExecutor = GridGain.grid().compute().executorService();
 	protected static final String LOADER_LOG = "DatasetLoader";
 	protected static final String DATASET_PROPERTIES_FILE = "datasetProperties.xml";
 	

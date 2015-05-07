@@ -77,10 +77,11 @@ public class TypeClassLoader implements ITypeLoader{
 
 	private ISchemaType getTypes(Class type) {
 		ISchemaType returnType = null;
-		if (type.isPrimitive() || type.getCanonicalName().equals(String.class.getCanonicalName())) {
+		if (type.isPrimitive() || type.getCanonicalName().equals(String.class.getCanonicalName()) || type.getCanonicalName().equals(Boolean.class.getCanonicalName())) {
 			returnType = new SchemaSimpleType(PrimitiveType.valueOf(type.getSimpleName().toUpperCase()));
 		}
 		else if (!type.isEnum()){
+			//System.out.println(type.getName());
 			Field[] subTypes = type.getFields();
 			SchemaComplexType complexType = new SchemaComplexType();
 			complexType.setName(type.getSimpleName());

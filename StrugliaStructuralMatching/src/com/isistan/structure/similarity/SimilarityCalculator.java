@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.swing.text.html.parser.TagElement;
+
 public class SimilarityCalculator implements Serializable{
 	
 	/**
@@ -45,13 +47,18 @@ public class SimilarityCalculator implements Serializable{
 				partialSolution.addTargetParameter(targetTypes.get(j));
 				targetTypes.remove(j);
 			}
-			if (j == targetTypes.size()) {
+			if (j >= targetTypes.size()) {
 				break;
 			}
 			partialCombinations.add(new LinkedList<ISchemaType>(partialSolution.getTargetParameters()));
 			getSimilarity(sourceTypes, targetTypes, sourceReturnType, targetReturnType);
 			partialSolution.removeLastTargetParameter();
-			targetTypes.add(j, targetType);
+			if (j > targetTypes.size()) {
+				targetTypes.add(targetType);
+			}
+			else {
+				targetTypes.add(j, targetType);
+			}
 		}
 		
 		partialSolution.removeLastSourceParameter();

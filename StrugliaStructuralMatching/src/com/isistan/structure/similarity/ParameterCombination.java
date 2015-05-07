@@ -57,7 +57,9 @@ public class ParameterCombination implements Cloneable, Comparable<ParameterComb
 		while (sourceTypesIterator.hasNext() && targetTypesIterator.hasNext()) {
 			ISchemaType sType= sourceTypesIterator.next();
 			ISchemaType tType= targetTypesIterator.next();
-			similarity += sType.similarity(tType);
+			if (tType != null) {
+				similarity += sType.similarity(tType);
+			}
 		}
 	}
 	
